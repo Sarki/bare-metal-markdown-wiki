@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Wiki</title>
+
+  <!-- ══════════════ SETTINGS (edit me) ══════════════
+       Local-first: settings live here, in the file — not in the UI.
+       maxResults  : maximum number of search results to display
+       tocSide     : where the table of contents is shown — 'left' (sidebar) or 'right' (rail)
+       foldersOpen : start with the sidebar folders expanded (false = all collapsed)
+       badgeColors : which first-words color inline @{ badges }
+       landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
+       sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' -->
+  <script>
+    window.WIKI = {
+      maxResults: 200,
+      tocSide: 'left',
+      foldersOpen: false,
+      landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
+      sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
+      // first word of a badge → its color; unknown words stay the gray pill
+      badgeColors: {
+        green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
+        yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
+        red:    ['error', 'failed', 'fails', 'failing', 'broken', 'danger', 'urgent', 'deprecated'],
+        blue:   ['info', 'new', 'beta', 'note', 'preview'],
+        purple: ['alpha', 'experimental', 'planned', 'idea']
+      }
+    };
+  </script>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="vendor/highlight.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#" class="brand" data-home>&#128218; Local Wiki</a>
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Search pages…" autocomplete="off" spellcheck="false">
+      <button id="clearSearch" class="clearbtn" type="button" title="Clear search">&times;</button>
+    </div>
+    <div id="mode" class="mode" title="Where pages come from: bundled snapshot (data.js) or a connected live folder"></div>
+    <button id="refresh" class="btn hidden" title="Re-read the connected folder now (live mode)">&#8635;</button>
+    <button id="choose" class="btn hidden" title="Point the wiki at your markdown folder for live rendering (one-time, remembered).">Live render</button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav id="tree" class="tree"></nav>
+      <div id="tags" class="tags"></div>
+    </aside>
+    <main id="content" class="content">
+      <div class="main-col">
+        <article id="page" class="page"></article>
+        <section id="backlinks" class="backlinks"></section>
+      </div>
+      <nav id="tocRail" class="toc-rail hidden"></nav>
+    </main>
+  </div>
+  <div id="searchResults" class="search-results hidden"></div>
+
+  <!-- vendor (all local; downloaded once, never at runtime) -->
+  <script src="vendor/markdown-it.min.js"></script>
+  <script src="vendor/mdit-extras.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib-auto-render.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script src="vendor/mermaid.min.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
