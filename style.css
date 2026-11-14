@@ -4,7 +4,7 @@
      1. Base & reset            5. Table of contents
      2. Top bar                 6. Home page & markdown extras
      3. Layout & sidebar        7. Search results
-     4. Article content         8. Small screens
+     4. Article content         8. Small screens / 9. Print
    ═══════════════════════════════════════════════════════════ */
 
 /* ── 1. Base & reset ─────────────────────────────────────── */
@@ -472,4 +472,18 @@ img { max-width: 100%; }
   .content { padding: 8px 16px 40px; }
   .content.toc-right { grid-template-columns: 1fr; }
   .toc-rail { display: none; }
+}
+
+/* ── 9. Print — only the rendered article ────────────────── */
+/* Hide every bit of chrome and release the fixed-height,
+   self-scrolling layout so the page flows across sheets. */
+@media print {
+  html, body { height: auto; overflow: visible; }
+  body { display: block; }
+  .topbar, .sidebar, .toc-rail, .backlinks, .search-results,
+  .copybtn, .breadcrumbs { display: none !important; }
+  .layout { display: block; flex: none; min-height: 0; }
+  .content, .content.toc-right { display: block; overflow: visible; padding: 0; }
+  pre { overflow: visible; white-space: pre-wrap; border: none; }
+  a { color: inherit; }
 }
