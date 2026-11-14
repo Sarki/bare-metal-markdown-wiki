@@ -163,9 +163,15 @@ This page is @{draft} and the plugin is @{v1.0} stable.
 ```
 
 
-Link resolution: `[[Stem]]` matches any file stem in the whole KB,
-case-insensitively (shortest path wins on ties); `[[sub/name]]` and plain
-`.md` links are path-relative.
+Link resolution:
+
+- `[[Stem]]` (no slash) matches any file stem in the whole KB,
+  case-insensitively; `[[Stem|alias]]` changes the displayed text. If
+  several files share a stem, the shallowest one wins.
+- `[[sub/name]]` (with a slash) is an exact path from the `articles/` root —
+  no `..`, case-sensitive.
+- Plain `.md` links are relative to the current page's folder
+  (`./` and `../` work; a leading `/` is root-absolute), case-sensitive.
 
 ## How it works
 
