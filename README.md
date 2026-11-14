@@ -8,6 +8,8 @@ The site is one static HTML frame (`index.html` + `app.js`) that reads `.md` fil
 them on the fly. Clone it, open `index.html`, done — it works offline, and it
 works from a plain `file://` double-click.
 
+![ ](Screenshot.png)
+
 ## Features
 
 **Wiki**
@@ -117,7 +119,7 @@ $$\int_0^1 x\,dx = \tfrac{1}{2}$$
 ```mermaid
 graph LR
   A[Markdown] --> B[HTML]
-```
+````
 
 A footnote.[^1]
 
@@ -154,7 +156,7 @@ Inline badges (small pill, anything between `@{` and `}`; known statuses like `d
 ```markdown
 This page is @{draft} and the plugin is @{v1.0} stable.
 ```
-````
+
 
 Link resolution: `[[Stem]]` matches any file stem in the whole KB,
 case-insensitively (shortest path wins on ties); `[[sub/name]]` and plain
