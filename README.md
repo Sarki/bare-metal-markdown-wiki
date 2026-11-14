@@ -8,7 +8,7 @@ The site is one static HTML frame (`index.html` + `app.js`) that reads `.md` fil
 them on the fly. Clone it, open `index.html`, done — it works offline, and it
 works from a plain `file://` double-click.
 
-![ ](Screenshot.png)
+![Screenshot](Screenshot.png)
 
 ## Features
 
@@ -30,7 +30,7 @@ works from a plain `file://` double-click.
 
 - Syntax-highlighted code blocks (highlight.js)
 - Math via KaTeX — `$…$`, `$$…$$`, `\(...\)`
-- Mermaid diagrams — ` ```mermaid ` fenced blocks
+- Mermaid diagrams — `` ```mermaid `` fenced blocks
 - Footnotes — `[^1]: …` at the bottom of the file
 
 ## Quick start
@@ -119,6 +119,7 @@ $$\int_0^1 x\,dx = \tfrac{1}{2}$$
 ```mermaid
 graph LR
   A[Markdown] --> B[HTML]
+```
 ````
 
 A footnote.[^1]
@@ -132,12 +133,15 @@ GitHub-style alerts (note, tip, important, warning, caution):
 
 Block containers (any name):
 
+```
 ::: tip
 Anything between the markers, styled by the name.
 :::
+```
 
 Tab panels (button bar, first tab active by default):
 
+````
 ::: tabs
 ::: tab: Node
 ```js
@@ -150,6 +154,7 @@ print('tabbed')
 ```
 :::
 :::
+````
 
 Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block):
 
@@ -208,4 +213,4 @@ test-render.js    smoke test: node test-render.js (run after upgrading vendor/)
 
 ## Disclaimer
 
-This was developped with the help of a local LLM.
+This was developed with the help of a local LLM.
