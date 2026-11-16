@@ -249,7 +249,7 @@
       const lvl = +h.tagName[1] - 1;
       html += '<a href="#' + h.id + '" class="toclink toc-l' + lvl + '">' + escapeHtml(h.textContent.trim()) + '</a>';
     });
-    tocHtml = '<div class="page-toc"><div class="toc-title">On this page</div>' + html + '</div>';
+    tocHtml = '<div class="page-toc">' + html + '</div>';
     placeToc();
   }
   function placeToc() { // right rail only occupies its column when the setting is right AND the page has a TOC

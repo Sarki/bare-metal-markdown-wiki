@@ -279,14 +279,6 @@ img { max-width: 100%; }
 
 /* the TOC list itself — used in both the sidebar ("left") and the rail ("right") */
 .page-toc { margin: 2px 0 8px; }
-.page-toc .toc-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  font-weight: 700;
-  margin: 4px 0 2px 8px;
-}
 .page-toc a {
   display: block;
   padding: 3px 8px 3px 14px;
