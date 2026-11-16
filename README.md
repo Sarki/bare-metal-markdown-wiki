@@ -38,6 +38,8 @@ works from a plain `file://` double-click.
   lazily from the `articles/` files (`data.js` stays text-only); in live-render
   mode they are read from the picked folder; `http(s)` sources load normally;
   `png` `jpg` `gif` `svg` `webp`
+- Local HTML files — `[report](report.html)` resolves the same way but opens in
+  a new tab (marked 📄): plain standalone files, not indexed (no sidebar/search/backlinks)
 - Footnotes — `[^1]: …` at the bottom of the file
 
 ## Quick start

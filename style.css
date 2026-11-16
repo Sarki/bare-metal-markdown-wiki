@@ -39,6 +39,7 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 a.ext-link::after { content: ' ↗'; font-size: 0.8em; } /* marks links that open in a new tab */
+a.html-file::after { content: ' \1F4C4'; font-size: 0.8em; } /* marks links to local .html files inside articles/ */
 
 h1, h2, h3, h4 {
   line-height: 1.25;

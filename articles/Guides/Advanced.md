@@ -177,6 +177,21 @@ big image costs nothing until you actually open its page. Supported: `png` `jpg`
 The file sits next to this article: `articles/Guides/logo-demo.svg`. If the path
 does not match a file, the browser shows the alt text instead.
 
+## Local HTML files
+
+A link ending in `.html` or `.htm` is treated as a **file next to the articles**,
+not a wiki page: same path rule as images, but it opens in a **new tab** (📄) —
+it leaves the wiki frame, with its own styles and scripts. Not indexed: no
+sidebar entry, no search, no backlinks.
+
+```markdown
+[Demo report](report-demo.html) → [Demo report](report-demo.html)
+```
+
+Live: [Demo report](report-demo.html)
+
+Not a wiki page on purpose — generated reports and saved pages stay simple files.
+
 ## Footnote tricks
 
 References sit in the sentence, definitions at the bottom of the file.
