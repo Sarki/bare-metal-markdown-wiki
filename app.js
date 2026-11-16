@@ -25,7 +25,7 @@
   if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: 'default' }); } catch (e) {} }
 
   // ---------- state ----------
-  const WIKI = window.WIKI || {}; // settings block at the top of index.html
+  const WIKI = window.WIKI || {}; // settings live in config.js; every key has a built-in default
   let RAW = [];                 // [{slug, mtime, content}]
   let PAGES = {};               // slug -> {slug,title,folder,tags,mtime,content,links}
   let IMAGES = {};              // "folder/file.png" (KB-root-relative) -> data URI
@@ -41,6 +41,8 @@
   let landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
   let sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
   document.documentElement.style.setProperty('--page-w', Math.min(100, Math.max(10, parseInt(WIKI.pageWidth, 10) || 70)) + '%'); // article width cap, 10–100%
+  const wikiName = (typeof WIKI.wikiName === 'string' && WIKI.wikiName.trim()) ? WIKI.wikiName.trim() : 'Local Wiki'; // shown in topbar + tab titles
+  document.querySelector('.brand').textContent = '\uD83D\uDCDA ' + wikiName; // keep the book icon, replace the default name
 
   // ---------- frontmatter ----------
   function parseFrontmatter(src) {
@@ -422,8 +424,8 @@
     if (slug) slug = decodeURIComponent(slug);
     if (slug && /^(fn|fnref)-/.test(slug)) return; // in-page footnote anchor
     el('page').classList.remove('home');
-    if (!slug) { document.title = renderLanding() + ' — Local Wiki'; }
-    else { renderPage(slug); document.title = (PAGES[slug] ? PAGES[slug].title : slug) + ' — Local Wiki'; }
+    if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
+    else { renderPage(slug); document.title = (PAGES[slug] ? PAGES[slug].title : slug) + ' — ' + wikiName; }
     renderSidebar(); // re-renders with the active page's folder chain open; ends with markActive()
   }
 

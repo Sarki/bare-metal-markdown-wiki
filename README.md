@@ -85,12 +85,12 @@ is hidden and the bundled snapshot is used instead.
 
 ## Settings
 
-Local-first means settings live in the file, not in the UI. Edit the marked
-block at the top of `index.html`:
+Local-first means settings live in the file, not in the UI. Edit `config.js`:
 
-```html
+```javascript
 window.WIKI = {
   maxResults: 200,   // maximum number of search results to display
+  wikiName: 'Local Wiki', // shown in the topbar and as "Page — name" tab titles
   tocSide: 'left',   // 'left' (sidebar) or 'right' (rail beside the article)
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70,     // article column width as % of the reading area; 10–100
@@ -106,6 +106,17 @@ window.WIKI = {
   }
 };
 ```
+
+Every key has a built-in default, so an older `config.js` keeps working when a new
+version adds settings.
+
+## Upgrading the wiki code
+
+`config.js`, `user.css` and `articles/` are yours; everything else is the app.
+Drop the new version on top of the folder (index.html, style.css, app.js,
+build.sh/bat, vendor/), keep those three, then re-run the build. Style tweaks
+go in `user.css`, which loads after `style.css` — override the `--bg`/`--accent`
+etc. variables or any selector there instead of editing `style.css`.
 
 ## Markdown conventions
 
@@ -210,6 +221,8 @@ folder ──File System Access API──────┘
 ```
 index.html        the frame (layout + UI chrome, no logic)
 style.css         styling
+user.css          your style tweaks (loaded after style.css) — survives upgrades
+config.js         your settings — survives upgrades
 app.js            all logic: loaders, renderer, search, navigation
 data.js           generated snapshot of articles/ (rebuild, don't edit)
 build.sh          offline rebuild — bash

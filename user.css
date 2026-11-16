@@ -1,0 +1,15 @@
+/* ══════════════ STYLE TWEAKS (edit me) ══════════════
+   Yours, like config.js: a wiki upgrade replaces style.css, never this file.
+   Loaded after style.css, so anything here wins. The colors and sizes below
+   are the app's CSS variables — override only what you want to change. */
+
+/* :root {
+   --bg: #fff;          --panel: #f6f8fa;      --border: #d0d7de;
+   --text: #1f2328;     --muted: #656d76;      --accent: #0969da;
+   --accent-soft: #ddf4ff;                     --code-bg: #f6f8fa;
+   --sidebar-w: 260px;  --topbar-h: 52px;
+ } */
+
+/* examples:
+ .page { line-height: 1.8; }
+ #page h2 { border-bottom: 2px solid var(--accent); } */

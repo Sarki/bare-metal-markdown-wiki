@@ -5,39 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Local Wiki</title>
 
-  <!-- ══════════════ SETTINGS (edit me) ══════════════
-       Local-first: settings live here, in the file — not in the UI.
-       maxResults  : maximum number of search results to display
-       tocSide     : where the table of contents is shown — 'left' (sidebar) or 'right' (rail)
-       tocLevels   : heading levels shown in the TOC (H1..Hn) — 1 to 6
-       pageWidth   : article column width, percent of the reading area — 10 to 100
-       foldersOpen : start with the sidebar folders expanded (false = all collapsed)
-       badgeColors : which first-words color inline @{ badges }
-       landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
-       sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' -->
-  <script>
-    window.WIKI = {
-      maxResults: 200,
-      tocSide: 'left',
-      tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6
-      pageWidth: 70, // article column width as % of the reading area; 10–100
-      foldersOpen: false,
-      landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
-      sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
-      // first word of a badge → its color; unknown words stay the gray pill
-      badgeColors: {
-        green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
-        yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
-        red:    ['error', 'failed', 'fails', 'failing', 'broken', 'danger', 'urgent', 'deprecated'],
-        blue:   ['info', 'new', 'beta', 'note', 'preview'],
-        purple: ['alpha', 'experimental', 'planned', 'idea']
-      }
-    };
-  </script>
+  <!-- settings live in config.js, style tweaks in user.css — both survive upgrades -->
+  <script src="config.js"></script>
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="vendor/highlight.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="user.css">
 </head>
 <body>
   <header class="topbar">
