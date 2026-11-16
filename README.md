@@ -25,6 +25,7 @@ works from a plain `file://` double-click.
 - Per-page table of contents — placement set in the settings block:
   *left* (sidebar, under the page's file name) or *right* (rail beside the article)
 - Hash routing — `#path/to/page` deep links, browser back/forward work
+- External links (`http…`, `mailto:`) open in a new tab, marked with a ↗
 - Resizable sidebar — drag the strip between sidebar and article; the width
   is remembered in the browser (localStorage), not in the settings file
 

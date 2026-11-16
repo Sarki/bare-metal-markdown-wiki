@@ -177,7 +177,7 @@
       const h = a.getAttribute('href');
       if (!h || h.charAt(0) === '#') return;
       if (/\.md($|#|\?)/i.test(h)) { const s = resolveMdPath(h, base); if (s) a.setAttribute('href', '#' + encodeURIComponent(s)); }
-      if (/^(https?:|mailto:)/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); } // external links: keep the wiki in place
+      if (/^(https?:|mailto:)/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.classList.add('ext-link'); } // external links: keep the wiki in place
     });
   }
   function highlightCode(pageNode) {

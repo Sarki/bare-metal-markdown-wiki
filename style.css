@@ -38,6 +38,7 @@ body {
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+a.ext-link::after { content: ' ↗'; font-size: 0.8em; } /* marks links that open in a new tab */
 
 h1, h2, h3, h4 {
   line-height: 1.25;
@@ -58,6 +59,13 @@ code {
   padding: 0.15em 0.35em;
   border-radius: 5px;
 }
+/* breathing room when anchor jumps land (TOC clicks, footnote refs) */
+#page [id] { scroll-margin-top: 4px; }
+
+/* the vendored katex.min.css predates upstream's .katex{position:relative};
+   without it the absolute .katex-mathml a11y spans anchor to the whole
+   document, making the root scrollable and scroll jumps overshoot */
+.katex { position: relative; }
 pre {
   position: relative;
   background: var(--code-bg);
