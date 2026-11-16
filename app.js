@@ -224,7 +224,7 @@
     pageNode.querySelectorAll('pre').forEach(function (pre) {
       if (pre.querySelector('.copybtn')) return;
       const b = document.createElement('button');
-      b.className = 'copybtn'; b.type = 'button'; b.textContent = 'Copy'; b.title = 'Copy code snippet';
+      b.className = 'copybtn'; b.type = 'button'; b.textContent = '\uD83D\uDCCB'; b.title = 'Copy code snippet'; // 📋
       pre.appendChild(b);
     });
   }
@@ -516,8 +516,8 @@
       if (!b) return;
       const code = b.closest('pre').querySelector('code');
       copyText(code ? code.textContent : b.closest('pre').textContent, function () {
-        b.textContent = 'Copied!';
-        setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+        b.textContent = '\u2705'; // ✅
+        setTimeout(function () { b.textContent = '\uD83D\uDCCB'; }, 1500); // 📋
       });
     });
     const tocScroll = function (e) {
