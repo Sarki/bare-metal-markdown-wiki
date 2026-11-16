@@ -249,7 +249,7 @@ img { max-width: 100%; }
 
 .content { padding: 8px 24px 60px; overflow: auto; }
 .main-col { min-width: 0; }
-.page { max-width: 860px; margin: 0 auto; }
+.page { max-width: var(--page-w, 860px); margin: 0 auto; } /* width set from the pageWidth setting */
 
 /* file path above the rendered page, e.g. articles › Guides › Basics.md */
 .breadcrumbs { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
@@ -302,7 +302,7 @@ img { max-width: 100%; }
 
 /* backlinks panel under the article */
 .backlinks {
-  max-width: 860px;
+  max-width: var(--page-w, 860px);
   margin: 28px auto 0;
   padding-top: 16px;
   border-top: 1px dashed var(--border);

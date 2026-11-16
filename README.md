@@ -93,6 +93,7 @@ window.WIKI = {
   maxResults: 200,   // maximum number of search results to display
   tocSide: 'left',   // 'left' (sidebar) or 'right' (rail beside the article)
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
+  pageWidth: 70,     // article column width as % of the reading area; 10–100
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
