@@ -28,6 +28,7 @@
   const WIKI = window.WIKI || {}; // settings block at the top of index.html
   let RAW = [];                 // [{slug, mtime, content}]
   let PAGES = {};               // slug -> {slug,title,folder,tags,mtime,content,links}
+  let IMAGES = {};              // "folder/file.png" (KB-root-relative) -> data URI
   let STEM = {};                // lowercased filename stem -> [slugs]
   let mode = 'bundled';
   let activeTag = '';
@@ -74,13 +75,13 @@
     if (arr.length === 1) return arr[0];
     return arr.slice().sort(function (a, b) { return a.split('/').length - b.split('/').length; })[0];
   }
+  function absPath(t, base) { // resolve a relative ref against the page's folder (shared by .md links and images)
+    const path = t.split('#')[0].split('?')[0];
+    if (!path) return '';
+    return path.charAt(0) === '/' ? path.slice(1) : normalizeParts((base ? base.split('/') : []).concat(path.split('/'))).join('/');
+  }
   function resolveMdPath(t, base) {
-    let path = t.split('#')[0].split('?')[0];
-    if (!path) return null;
-    path = path.replace(/\.md$/i, '');
-    let abs;
-    if (path.charAt(0) === '/') abs = path.slice(1);
-    else abs = normalizeParts((base ? base.split('/') : []).concat(path.split('/'))).join('/');
+    const abs = absPath(t, base).replace(/\.md$/i, '');
     return PAGES[abs] ? abs : null;
   }
 
@@ -178,6 +179,12 @@
       if (!h || h.charAt(0) === '#') return;
       if (/\.md($|#|\?)/i.test(h)) { const s = resolveMdPath(h, base); if (s) a.setAttribute('href', '#' + encodeURIComponent(s)); }
       if (/^(https?:|mailto:)/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.classList.add('ext-link'); } // external links: keep the wiki in place
+    });
+    pageNode.querySelectorAll('img[src]').forEach(function (im) { // local images resolve against the page folder, same as .md links; live mode holds the bytes in IMAGES, bundled mode points at the articles/ files so they lazy-load
+      const s = im.getAttribute('src');
+      if (!s || /^(https?:|data:)/i.test(s)) return;
+      const abs = absPath(s, base);
+      im.src = IMAGES[abs] || 'articles/' + abs; // shortcut: 'articles' must match build.sh's KB dir — read from settings if it ever becomes configurable
     });
   }
   function highlightCode(pageNode) {
@@ -422,9 +429,10 @@
   // ---------- loaders ----------
   function loadBundled() {
     RAW = (window.PAGES_BUNDLED || []).map(function (p) { return { slug: p.slug, mtime: p.mtime, content: b64toUtf8(p.content) }; });
+    IMAGES = {};
   }
   async function loadLive(handle) {
-    RAW = [];
+    RAW = []; IMAGES = {};
     await walkDir(handle, '', RAW);
   }
   async function walkDir(handle, prefix, acc) {
@@ -433,11 +441,21 @@
         if (/\.md$/i.test(e.name)) {
           const f = await e.getFile();
           acc.push({ slug: (prefix + e.name).replace(/\.md$/i, ''), mtime: Math.floor(f.lastModified / 1000), content: await f.text() });
+        } else if (/\.(png|jpe?g|gif|svg|webp)$/i.test(e.name)) {
+          IMAGES[prefix + e.name] = await fileToDataURI(await e.getFile(), e.name);
         }
       } else if (e.kind === 'directory') {
         await walkDir(e, prefix + e.name + '/', acc);
       }
     }
+  }
+  async function fileToDataURI(f, name) {
+    const ext = name.split('.').pop().toLowerCase();
+    const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'jpg' ? 'image/jpeg' : 'image/' + ext;
+    const u8 = new Uint8Array(await f.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
+    return 'data:' + mime + ';base64,' + btoa(bin);
   }
   const IDB = {
     db: null,

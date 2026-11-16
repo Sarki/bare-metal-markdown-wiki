@@ -160,6 +160,23 @@ pie title What the wiki is made of
   "JS" : 10
 ```
 
+## Local images
+
+`![alt](file)` with a relative path: the path resolves **against the page's folder**,
+same rule as plain `.md` links. Images are ordinary files that live next to the
+articles and load lazily when a page shows them — `data.js` stays text-only, so a
+big image costs nothing until you actually open its page. Supported: `png` `jpg`
+`gif` `svg` `webp`.
+
+```markdown
+![A sample image](logo-demo.svg)
+```
+
+![A sample image](logo-demo.svg)
+
+The file sits next to this article: `articles/Guides/logo-demo.svg`. If the path
+does not match a file, the browser shows the alt text instead.
+
 ## Footnote tricks
 
 References sit in the sentence, definitions at the bottom of the file.

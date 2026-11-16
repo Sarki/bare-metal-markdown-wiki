@@ -34,6 +34,10 @@ works from a plain `file://` double-click.
 - Syntax-highlighted code blocks (highlight.js)
 - Math via KaTeX — `$…$`, `$$…$$`, `\(...\)`
 - Mermaid diagrams — `` ```mermaid `` fenced blocks
+- Local images — `![alt](pic.png)` resolves against the page's folder and loads
+  lazily from the `articles/` files (`data.js` stays text-only); in live-render
+  mode they are read from the picked folder; `http(s)` sources load normally;
+  `png` `jpg` `gif` `svg` `webp`
 - Footnotes — `[^1]: …` at the bottom of the file
 
 ## Quick start
@@ -221,6 +225,7 @@ test-app.js       smoke test: node test-app.js (link/footnote source passes)
   and some Chrome builds on `file://` may re-ask for permission between sessions
 - Search is substring matching — plenty for a local KB
 - Bundled mode is a snapshot: new pages need a rebuild (or use live render)
+- Bundled images are plain files: keep the `articles/` folder next to `index.html` (the wiki folder is the unit you copy or serve)
 
 ## Disclaimer
 

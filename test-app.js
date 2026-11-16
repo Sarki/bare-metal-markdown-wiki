@@ -24,8 +24,8 @@ function grab(name) {
 }
 const STEMS = {};
 global.STEM = {}; global.PAGES = {};
-(0, eval)([grab('escapeHtml'), grab('resolveSlug'), grab('outsideCode'),
-           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;');
+(0, eval)([grab('escapeHtml'), grab('resolveSlug'), grab('outsideCode'), grab('normalizeParts'), grab('absPath'),
+           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;');
 ['Home', 'Guides/Basics', 'Guides/Nope'].forEach(function (s) {
   global.PAGES[s] = { slug: s };
   const k = s.split('/').pop().toLowerCase();
@@ -53,5 +53,18 @@ for (const c of cases) {
   });
   if (!ok) { bad++; console.log('FAIL: ' + c[0] + '\n  got: ' + html.replace(/\n/g, '\\n')); }
 }
+const pathCases = [ // image/.md refs resolve against the page's folder
+  ['pic.png', 'Guides', 'Guides/pic.png'],
+  ['./pic.png', 'Guides', 'Guides/pic.png'],
+  ['sub/pic.png', 'Guides', 'Guides/sub/pic.png'],
+  ['../shared/x.png', 'Guides', 'shared/x.png'],
+  ['/root.png', 'Guides', 'root.png'],
+  ['pic.png#frag', 'Guides', 'Guides/pic.png'],
+  ['pic.png', '', 'pic.png'],
+];
+for (const [t, base, want] of pathCases) {
+  const got = absPath(t, base);
+  if (got !== want) { bad++; console.log('FAIL: absPath ' + JSON.stringify(t) + ' @ ' + JSON.stringify(base) + ': got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want)); }
+}
 if (bad) { console.log(bad + ' failed'); process.exit(1); }
-console.log('test-app: ' + cases.length + '/' + cases.length + ' passed');
+console.log('test-app: ' + (cases.length + pathCases.length) + '/' + (cases.length + pathCases.length) + ' passed');
