@@ -25,6 +25,8 @@ works from a plain `file://` double-click.
 - Per-page table of contents — placement set in the settings block:
   *left* (sidebar, under the page's file name) or *right* (rail beside the article)
 - Hash routing — `#path/to/page` deep links, browser back/forward work
+- Resizable sidebar — drag the strip between sidebar and article; the width
+  is remembered in the browser (localStorage), not in the settings file
 
 **Markdown extras**
 
@@ -85,6 +87,7 @@ block at the top of `index.html`:
 window.WIKI = {
   maxResults: 200,   // maximum number of search results to display
   tocSide: 'left',   // 'left' (sidebar) or 'right' (rail beside the article)
+  tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
@@ -208,6 +211,7 @@ build.bat         offline rebuild — Windows
 articles/         the knowledge base (sample pages included)
 vendor/           markdown-it, mdit-extras, highlight.js, KaTeX (+fonts), mermaid
 test-render.js    smoke test: node test-render.js (run after upgrading vendor/)
+test-app.js       smoke test: node test-app.js (link/footnote source passes)
 ```
 
 ## Limitations

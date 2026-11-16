@@ -165,7 +165,7 @@ img { max-width: 100%; }
 
 .layout {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-columns: var(--sidebar-w) 6px 1fr;
   flex: 1;
   min-height: 0; /* let grid children overflow into their own scrollbars */
 }
@@ -176,6 +176,10 @@ img { max-width: 100%; }
   padding: 16px 12px;
   overflow: auto;
 }
+
+/* the drag strip between sidebar and article; width lives in --sidebar-w */
+.resizer { cursor: col-resize; user-select: none; }
+.resizer:hover { background: #eaeef2; }
 
 /* folder tree — each folder is a collapsible <details>; subfolders nest
    inside their parent. The left border on .grp-body is the gutter that
@@ -284,6 +288,9 @@ img { max-width: 100%; }
 .page-toc a:hover { color: var(--accent); background: #eaeef2; text-decoration: none; }
 .page-toc .toc-l1 { padding-left: 26px; }
 .page-toc .toc-l2 { padding-left: 38px; }
+.page-toc .toc-l3 { padding-left: 50px; }
+.page-toc .toc-l4 { padding-left: 62px; }
+.page-toc .toc-l5 { padding-left: 74px; }
 
 /* backlinks panel under the article */
 .backlinks {
@@ -468,7 +475,7 @@ img { max-width: 100%; }
 
 @media (max-width: 760px) {
   .layout { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
+  .sidebar, .resizer { display: none; }
   .content { padding: 8px 16px 40px; }
   .content.toc-right { grid-template-columns: 1fr; }
   .toc-rail { display: none; }
@@ -480,7 +487,7 @@ img { max-width: 100%; }
 @media print {
   html, body { height: auto; overflow: visible; }
   body { display: block; }
-  .topbar, .sidebar, .toc-rail, .backlinks, .search-results,
+  .topbar, .sidebar, .resizer, .toc-rail, .backlinks, .search-results,
   .copybtn, .breadcrumbs { display: none !important; }
   .layout { display: block; flex: none; min-height: 0; }
   .content, .content.toc-right { display: block; overflow: visible; padding: 0; }

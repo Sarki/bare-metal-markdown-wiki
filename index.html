@@ -9,6 +9,7 @@
        Local-first: settings live here, in the file — not in the UI.
        maxResults  : maximum number of search results to display
        tocSide     : where the table of contents is shown — 'left' (sidebar) or 'right' (rail)
+       tocLevels   : heading levels shown in the TOC (H1..Hn) — 1 to 6
        foldersOpen : start with the sidebar folders expanded (false = all collapsed)
        badgeColors : which first-words color inline @{ badges }
        landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
@@ -17,6 +18,7 @@
     window.WIKI = {
       maxResults: 200,
       tocSide: 'left',
+      tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6
       foldersOpen: false,
       landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
       sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
@@ -52,6 +54,7 @@
       <nav id="tree" class="tree"></nav>
       <div id="tags" class="tags"></div>
     </aside>
+    <div id="resizer" class="resizer" title="Drag to resize the sidebar"></div>
     <main id="content" class="content">
       <div class="main-col">
         <article id="page" class="page"></article>

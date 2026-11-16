@@ -35,6 +35,7 @@
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
   let tocSide = (WIKI.tocSide === 'right') ? 'right' : 'left'; // from the settings block in index.html
+  let tocLevels = Math.min(6, Math.max(1, parseInt(WIKI.tocLevels, 10) || 3)); // TOC heading depth, 1–6
   let foldersOpen = WIKI.foldersOpen === true; // start with the sidebar folders expanded
   let landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
   let sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
@@ -102,26 +103,47 @@
   }
   function outLinks(p) {
     const set = new Set();
-    let m; const w = /\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g;
-    while ((m = w.exec(p.content))) { const s = resolveSlug(m[1].trim()); if (s) set.add(s); }
-    const l = /\]\(([^)]+)\)/g;
-    while ((m = l.exec(p.content))) { const t = m[1].trim(); if (/\.md($|#|\?)/i.test(t)) { const s = resolveMdPath(t, p.folder); if (s) set.add(s); } }
+    outsideCode(p.content, function (s) { // mentions inside code do not create backlinks
+      let m; const w = /\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g;
+      while ((m = w.exec(s))) { const slug = resolveSlug(m[1].trim()); if (slug) set.add(slug); }
+      const l = /\]\(([^)]+)\)/g;
+      while ((m = l.exec(s))) { const t = m[1].trim(); if (/\.md($|#|\?)/i.test(t)) { const slug = resolveMdPath(t, p.folder); if (slug) set.add(slug); } }
+      return s;
+    });
     return set;
   }
 
   // ---------- wiki + footnotes ----------
+  // [[…]]/[^…] rewriting must skip ``` fences and `spans`, otherwise example
+  // sources written inside code get rewritten into mangled link markup.
+  // shortcut: only ```/~~~ fences and single-` spans are protected; unclosed
+  // fences and ``-spans can still be rewritten — upgrade to a real tokenizer
+  // if a page needs that
+  function outsideCode(src, fn) {
+    const re = /([ \t]{0,3}(?:```|~~~)[^\n]*\n[\s\S]*?^[ \t]{0,3}(?:```|~~~)[ \t]*$|`[^`\n]+`)/gm;
+    let out = '', last = 0, m;
+    while ((m = re.exec(src))) {
+      out += fn(src.slice(last, m.index)) + m[0]; // text before the code run is rewritten, code run kept
+      last = re.lastIndex;
+    }
+    return out + fn(src.slice(last));
+  }
   function wikiLinks(src) {
-    return src.replace(/\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g, function (m, target, display) {
-      const t = target.trim();
-      const label = (display ? display.trim() : t).replace(/\.md$/i, '');
-      const slug = resolveSlug(t);
-      if (slug) return '[' + label + '](#' + encodeURIComponent(slug) + ')';
-      return '<span class="broken-wiki">[' + escapeHtml(label) + ']</span>';
+    return outsideCode(src, function (s) {
+      return s.replace(/\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g, function (m, target, display) {
+        const t = target.trim();
+        const label = (display ? display.trim() : t).replace(/\.md$/i, '');
+        const slug = resolveSlug(t);
+        if (slug) return '[' + label + '](#' + encodeURIComponent(slug) + ')';
+        return '<span class="broken-wiki">[' + escapeHtml(label) + ']</span>';
+      });
     });
   }
   function withFootnotes(src) {
-    const lines = src.split('\n'); const body = []; const defs = {};
+    const lines = src.split('\n'); const body = []; const defs = {}; let inFence = false;
     for (let i = 0; i < lines.length; i++) {
+      if (/^[ \t]{0,3}(?:```|~~~)/.test(lines[i])) { inFence = !inFence; body.push(lines[i]); continue; } // fences pass through untouched
+      if (inFence) { body.push(lines[i]); continue; }
       const m = lines[i].match(/^\s{0,3}\[\^([^\]]+)\]:\s?([\s\S]*)$/);
       if (m) {
         const id = m[1].trim();
@@ -132,12 +154,12 @@
       } else body.push(lines[i]);
     }
     const num = {}; const used = [];
-    const nbody = body.join('\n').replace(/\[\^([^\]]+)\]/g, function (mm, id) {
+    const nbody = outsideCode(body.join('\n'), function (b) { return b.replace(/\[\^([^\]]+)\]/g, function (mm, id) {
       id = id.trim();
       if (!(id in num)) { num[id] = used.length + 1; used.push(id); }
       const n = num[id];
       return '<sup id="fnref-' + n + '"><a href="#fn-' + n + '">' + n + '</a></sup>';
-    });
+    }); });
     let html = md.render(nbody);
     if (used.length) {
       html += '<section class="footnotes"><hr><ol>' + used.map(function (id) {
@@ -175,7 +197,7 @@
           { left: '$', right: '$', display: false }
         ],
         throwOnError: false,
-        ignoredTags: ['SCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE']
+        ignoredTags: ['script', 'style', 'textarea', 'pre', 'code'] // this auto-render lowercases nodeName before matching — capitals would match nothing
       });
     } catch (e) {}
   }
@@ -208,12 +230,12 @@
     t.remove();
   }
   function buildToc(pageNode) {
-    const heads = Array.prototype.slice.call(pageNode.querySelectorAll('h1,h2,h3'));
+    const heads = Array.prototype.slice.call(pageNode.querySelectorAll('h1,h2,h3,h4,h5,h6')).filter(function (h) { return +h.tagName[1] <= tocLevels; }); // tagName is uppercase: 'H2'[1] -> 2
     if (!heads.length) { tocHtml = ''; placeToc(); return; }
     let html = '';
     heads.forEach(function (h) {
       if (!h.id) h.id = 'hd-' + Math.random().toString(36).slice(2, 8);
-      const lvl = h.tagName === 'h3' ? 2 : (h.tagName === 'h2' ? 1 : 0);
+      const lvl = +h.tagName[1] - 1;
       html += '<a href="#' + h.id + '" class="toclink toc-l' + lvl + '">' + escapeHtml(h.textContent.trim()) + '</a>';
     });
     tocHtml = '<div class="page-toc"><div class="toc-title">On this page</div>' + html + '</div>';
@@ -491,6 +513,19 @@
 
     const canPick = typeof showDirectoryPicker === 'function';
     el('choose').classList.toggle('hidden', !canPick); // hidden by default; revealed only where the File System Access API exists
+
+    // resizable sidebar: drag the strip, width clamped 140–480 and remembered
+    const setSidebarW = function (w) { document.documentElement.style.setProperty('--sidebar-w', w + 'px'); };
+    const savedW = parseInt(localStorage.getItem('sidebar-w'), 10);
+    if (savedW >= 140 && savedW <= 480) setSidebarW(savedW);
+    el('resizer').addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      let w = 0;
+      const move = function (ev) { w = Math.min(480, Math.max(140, ev.clientX)); setSidebarW(w); };
+      const up = function () { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); if (w) localStorage.setItem('sidebar-w', w); };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
 
     try {
       const h = await IDB.get('dir');
