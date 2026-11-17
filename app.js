@@ -37,12 +37,14 @@
   let liveHandle = null;       // FileSystemDirectoryHandle, once connected
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
-  let tocSide = (WIKI.tocSide === 'right') ? 'right' : 'left'; // from the settings block in index.html
+  let tocSide = (WIKI.tocSide === 'right') ? 'right' : 'left'; // from the settings in config.js
   let tocLevels = Math.min(6, Math.max(1, parseInt(WIKI.tocLevels, 10) || 3)); // TOC heading depth, 1–6
   let foldersOpen = WIKI.foldersOpen === true; // start with the sidebar folders expanded
   let landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
   let sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
   document.documentElement.style.setProperty('--page-w', Math.min(100, Math.max(10, parseInt(WIKI.pageWidth, 10) || 70)) + '%'); // article width cap, 10–100%
+  document.documentElement.style.setProperty('--search-w', Math.min(100, Math.max(10, parseInt(WIKI.searchWidth, 10) || 50)) + '%'); // search panel width, 10–100% of the window
+  document.documentElement.style.setProperty('--search-h', Math.min(100, Math.max(10, parseInt(WIKI.searchHeight, 10) || 60)) + 'vh'); // search panel max height, 10–100% of the window
   const wikiName = (typeof WIKI.wikiName === 'string' && WIKI.wikiName.trim()) ? WIKI.wikiName.trim() : 'Local Wiki'; // shown in topbar + tab titles
   const brandIcon = typeof WIKI.brandIcon === 'string' ? WIKI.brandIcon : '\uD83D\uDCDA'; // topbar glyph before the name; '' hides it
   document.querySelector('.brand').textContent = (brandIcon ? brandIcon + ' ' : '') + wikiName;
@@ -393,6 +395,15 @@
   }
 
   // ---------- search ----------
+  function markHits(text, q) { // wrap every case-insensitive hit in <mark>; escape per-segment so the query can't inject HTML
+    let out = '', i = 0;
+    const t = text.toLowerCase();
+    for (let j = t.indexOf(q, i); j >= 0; j = t.indexOf(q, i)) {
+      out += escapeHtml(text.slice(i, j)) + '<mark>' + escapeHtml(text.slice(j, j + q.length)) + '</mark>';
+      i = j + q.length;
+    }
+    return out + escapeHtml(text.slice(i));
+  }
   function snippet(content, q) {
     const t = content.replace(/[#*`>\[\]_~]/g, ' ').replace(/\s+/g, ' ');
     const i = t.toLowerCase().indexOf(q);
@@ -406,9 +417,9 @@
     const all = Object.keys(PAGES).filter(function (s) { return (PAGES[s].title + ' ' + PAGES[s].content).toLowerCase().indexOf(q) !== -1; });
     const hits = all.slice(0, max);
     box.innerHTML = hits.length ? hits.map(function (s) {
-      return '<a href="#' + encodeURIComponent(s) + '"><span class="crumb">' + escapeHtml((PAGES[s].folder ? PAGES[s].folder + ' / ' : '') + PAGES[s].title) + '</span>' + escapeHtml(snippet(PAGES[s].content, q)) + '</a>';
+      return '<a href="#' + encodeURIComponent(s) + '"><span class="crumb">' + markHits((PAGES[s].folder ? PAGES[s].folder + ' / ' : '') + PAGES[s].title, q) + '</span>' + markHits(snippet(PAGES[s].content, q), q) + '</a>';
     }).join('') : '<a>&mdash; no results &mdash;</a>';
-    if (all.length > max) box.innerHTML += '<div class="search-note">' + all.length + ' matches &mdash; showing the first ' + max + '. Edit <code>maxResults</code> at the top of index.html to see more.</div>';
+    if (all.length > max) box.innerHTML += '<div class="search-note">' + all.length + ' matches &mdash; showing the first ' + max + '. Edit <code>maxResults</code> in config.js to see more.</div>';
     box.classList.remove('hidden');
   }
 

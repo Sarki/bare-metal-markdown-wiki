@@ -24,8 +24,8 @@ function grab(name) {
 }
 const STEMS = {};
 global.STEM = {}; global.PAGES = {};
-(0, eval)([grab('escapeHtml'), grab('resolveSlug'), grab('outsideCode'), grab('normalizeParts'), grab('absPath'), grab('extRe'),
-           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;global.extRe=extRe;');
+(0, eval)([grab('escapeHtml'), grab('markHits'), grab('resolveSlug'), grab('outsideCode'), grab('normalizeParts'), grab('absPath'), grab('extRe'),
+           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;global.extRe=extRe;global.markHits=markHits;');
 ['Home', 'Guides/Basics', 'Guides/Nope'].forEach(function (s) {
   global.PAGES[s] = { slug: s };
   const k = s.split('/').pop().toLowerCase();
@@ -76,5 +76,14 @@ for (const [name, list, inList, outList] of extCases) {
   for (const n of inList) if (!re.test(n)) { bad++; console.log('FAIL: extRe(' + name + ') should match ' + n); }
   for (const n of outList) if (re.test(n)) { bad++; console.log('FAIL: extRe(' + name + ') should NOT match ' + n); }
 }
+const markCases = [ // searched terms come back <mark>ed in results, query never injects HTML
+  ['marks all hits, any case', 'Foo bar BAZ bar', 'bar', 'Foo <mark>bar</mark> BAZ <mark>bar</mark>'],
+  ['escapes text and query',   'a<b> a',           'a<b', '<mark>a&lt;b</mark>&gt; a'],
+  ['no hit = escaped only',    'x & y',            'zzz', 'x &amp; y'],
+];
+for (const [name, text, q, want] of markCases) {
+  const got = markHits(text, q.toLowerCase());
+  if (got !== want) { bad++; console.log('FAIL: markHits ' + name + ': got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want)); }
+}
 if (bad) { console.log(bad + ' failed'); process.exit(1); }
-console.log('test-app: ' + (cases.length + pathCases.length + extCases.length) + '/' + (cases.length + pathCases.length + extCases.length) + ' passed');
+console.log('test-app: ' + (cases.length + pathCases.length + extCases.length + markCases.length) + '/' + (cases.length + pathCases.length + extCases.length + markCases.length) + ' passed');

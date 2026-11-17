@@ -5,6 +5,8 @@
    app's built-in defaults, so an old config still works with a new version.
 
    maxResults  : maximum number of search results to display
+   searchWidth : search results panel width, percent of the window — 10 to 100
+   searchHeight : search results panel max height, percent of the window — 10 to 100
    wikiName    : name shown in the topbar and the browser tab title
    tocSide     : where the table of contents is shown — 'left' (sidebar) or 'right' (rail)
    tocLevels   : heading levels shown in the TOC (H1..Hn) — 1 to 6
@@ -19,6 +21,8 @@
    sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' */
 window.WIKI = {
   maxResults: 200,
+  searchWidth: 50, // search results panel width as % of the window; 10–100 (panel hangs from the topbar's right side)
+  searchHeight: 60, // search results panel max height as % of the window; 10–100 (panel scrolls past that)
   wikiName: 'Local Wiki', // shown in the topbar (after the book icon) and as "Page — name" tab titles
   tocSide: 'left',
   tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6

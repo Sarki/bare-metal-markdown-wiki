@@ -21,7 +21,8 @@ works from a plain `file://` double-click.
   regular `.md` links; unresolvable links are visibly marked
 - Backlinks panel under every page
 - Frontmatter **tags** with one-click filtering
-- Live full-text search (result cap set in the settings block)
+- Live full-text search with the searched terms highlighted (result cap and
+  panel width/height set in the settings block)
 - Per-page table of contents — placement set in the settings block:
   *left* (sidebar, under the page's file name) or *right* (rail beside the article)
 - Hash routing — `#path/to/page` deep links, browser back/forward work
@@ -92,6 +93,8 @@ Local-first means settings live in the file, not in the UI. Edit `config.js`:
 ```javascript
 window.WIKI = {
   maxResults: 200,   // maximum number of search results to display
+  searchWidth: 50,   // results panel width as % of the window; 10–100
+  searchHeight: 60,  // results panel max height as % of the window; 10–100
   wikiName: 'Local Wiki', // shown in the topbar and as "Page — name" tab titles
   tocSide: 'left',   // 'left' (sidebar) or 'right' (rail beside the article)
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
