@@ -24,8 +24,8 @@ function grab(name) {
 }
 const STEMS = {};
 global.STEM = {}; global.PAGES = {};
-(0, eval)([grab('escapeHtml'), grab('resolveSlug'), grab('outsideCode'), grab('normalizeParts'), grab('absPath'),
-           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;');
+(0, eval)([grab('escapeHtml'), grab('resolveSlug'), grab('outsideCode'), grab('normalizeParts'), grab('absPath'), grab('extRe'),
+           grab('wikiLinks'), grab('withFootnotes')].join('\n') + '\n;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;global.extRe=extRe;');
 ['Home', 'Guides/Basics', 'Guides/Nope'].forEach(function (s) {
   global.PAGES[s] = { slug: s };
   const k = s.split('/').pop().toLowerCase();
@@ -66,5 +66,15 @@ for (const [t, base, want] of pathCases) {
   const got = absPath(t, base);
   if (got !== want) { bad++; console.log('FAIL: absPath ' + JSON.stringify(t) + ' @ ' + JSON.stringify(base) + ': got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want)); }
 }
+const extCases = [ // imageExts in config.js drives live-render image loading
+  ['default list', undefined, ['a.png', 'b.JPG', 'c.jpeg', 'd.gif', 'e.svg', 'f.webp'], ['x.txt', 'y.md', 'z.pdf']],
+  ['custom list', ['bmp', 'avif'], ['a.bmp', 'b.AVIF'], ['c.png', 'd.jpg']],
+  ['junk entries dropped', ['png', 'jpg$|<x'], ['ok.png'], ['a.jpg', 'b.svg']],
+];
+for (const [name, list, inList, outList] of extCases) {
+  const re = extRe(list);
+  for (const n of inList) if (!re.test(n)) { bad++; console.log('FAIL: extRe(' + name + ') should match ' + n); }
+  for (const n of outList) if (re.test(n)) { bad++; console.log('FAIL: extRe(' + name + ') should NOT match ' + n); }
+}
 if (bad) { console.log(bad + ' failed'); process.exit(1); }
-console.log('test-app: ' + (cases.length + pathCases.length) + '/' + (cases.length + pathCases.length) + ' passed');
+console.log('test-app: ' + (cases.length + pathCases.length + extCases.length) + '/' + (cases.length + pathCases.length + extCases.length) + ' passed');

@@ -10,18 +10,20 @@
    tocLevels   : heading levels shown in the TOC (H1..Hn) — 1 to 6
    pageWidth   : article column width, percent of the reading area — 10 to 100
    foldersOpen : start with the sidebar folders expanded (false = all collapsed)
+   imageExts   : extensions read as images in live-render mode (bundled mode needs no list, the browser paints any format)
    badgeColors : which first-words color inline @{ badges }
    landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
    sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' */
 window.WIKI = {
   maxResults: 200,
-  wikiName: 'Local Wiki', // shown in the topbar (after the book icon) and as "Page — name" tab titles
+  wikiName: 'Testing the change', // shown in the topbar (after the book icon) and as "Page — name" tab titles
   tocSide: 'left',
   tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70, // article column width as % of the reading area; 10–100
   foldersOpen: false,
   landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
+  imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // live-render mode only; add e.g. 'bmp' or 'avif' if your browser supports it
   // first word of a badge → its color; unknown words stay the gray pill
   badgeColors: {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],

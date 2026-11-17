@@ -21,6 +21,8 @@
 
   // ---------- markdown engine ----------
   const md = window.markdownit({ html: true, linkify: true, typographer: false, breaks: false });
+  const defValidateLink = md.validateLink.bind(md); // markdown-it blocks non-http schemes for links AND images; let file:// through (works when the wiki itself runs on file://, browsers block it over http — nothing more we can do)
+  md.validateLink = function (u) { return /^file:\/\/\//i.test(u) || defValidateLink(u); };
   if (window.MditExtras) { md.use(MditExtras.container); md.use(MditExtras.alerts); md.use(MditExtras.tabs); md.use(MditExtras.badges); } // ::: containers, > [!NOTE] alerts, ::: tabs, @{ badges }
   if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: 'default' }); } catch (e) {} }
 
@@ -180,13 +182,13 @@
     pageNode.querySelectorAll('a[href]').forEach(function (a) {
       const h = a.getAttribute('href');
       if (!h || h.charAt(0) === '#') return;
-      if (/^(https?:|mailto:)/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.classList.add('ext-link'); } // external links: keep the wiki in place
+      if (/^(https?:|mailto:|file:)/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.classList.add('ext-link'); } // external + file: links: keep the wiki in place
       else if (/\.md($|#|\?)/i.test(h)) { const s = resolveMdPath(h, base); if (s) a.setAttribute('href', '#' + encodeURIComponent(s)); }
       else if (/\.html?($|#|\?)/i.test(h)) { const abs = absPath(h, base); if (abs) { a.setAttribute('href', 'articles/' + abs); a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener'); a.classList.add('html-file'); } } // local HTML files leave the frame: new tab, like external links
     });
     pageNode.querySelectorAll('img[src]').forEach(function (im) { // local images resolve against the page folder, same as .md links; live mode holds the bytes in IMAGES, bundled mode points at the articles/ files so they lazy-load
       const s = im.getAttribute('src');
-      if (!s || /^(https?:|data:)/i.test(s)) return;
+      if (!s || /^(https?:|file:|data:)/i.test(s)) return; // no extension filter: the browser renders whatever format it supports
       const abs = absPath(s, base);
       im.src = IMAGES[abs] || 'articles/' + abs; // shortcut: 'articles' must match build.sh's KB dir — read from settings if it ever becomes configurable
     });
@@ -439,13 +441,18 @@
     RAW = []; IMAGES = {};
     await walkDir(handle, '', RAW);
   }
+  function extRe(list) { // live-render image list, set by imageExts in config.js; junk entries dropped, empty falls back to the built-in list
+    const ok = (Array.isArray(list) ? list : []).filter(function (s) { return /^[a-z0-9]+$/i.test(s); });
+    return new RegExp('\\.(' + (ok.length ? ok.join('|') : 'png|jpg|jpeg|gif|svg|webp') + ')$', 'i');
+  }
+  const imgExtRe = extRe(WIKI.imageExts); // bundled mode has no filter at all — the browser paints any format it supports
   async function walkDir(handle, prefix, acc) {
     for await (const e of handle.values()) {
       if (e.kind === 'file') {
         if (/\.md$/i.test(e.name)) {
           const f = await e.getFile();
           acc.push({ slug: (prefix + e.name).replace(/\.md$/i, ''), mtime: Math.floor(f.lastModified / 1000), content: await f.text() });
-        } else if (/\.(png|jpe?g|gif|svg|webp)$/i.test(e.name)) {
+        } else if (imgExtRe.test(e.name)) {
           IMAGES[prefix + e.name] = await fileToDataURI(await e.getFile(), e.name);
         }
       } else if (e.kind === 'directory') {

@@ -99,6 +99,7 @@ window.WIKI = {
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
+  imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
@@ -242,6 +243,7 @@ test-app.js       smoke test: node test-app.js (link/footnote source passes)
 - Search is substring matching — plenty for a local KB
 - Bundled mode is a snapshot: new pages need a rebuild (or use live render)
 - Bundled images are plain files: keep the `articles/` folder next to `index.html` (the wiki folder is the unit you copy or serve)
+- `file:///…` refs (images/links outside `articles/`) only load when the wiki itself is opened via `file://`; browsers block them over `http(s)`. Out-of-KB `.md` links open as raw text — KB pages must live in `articles/`
 
 ## Disclaimer
 

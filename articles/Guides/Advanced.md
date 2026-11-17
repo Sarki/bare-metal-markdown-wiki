@@ -192,6 +192,25 @@ Live: [Demo report](report-demo.html)
 
 Not a wiki page on purpose — generated reports and saved pages stay simple files.
 
+## Files outside `articles/` (`file://`)
+
+Images and links may use an absolute `file:///…` URI — **three slashes**: `file://name`
+is parsed as a hostname, not a path. How it behaves depends on how *the wiki itself*
+was opened, and no app can change that:
+
+- opened directly (`file://`): images paint, links open in a new tab — including
+  `file:///path/to/another-wiki/index.html#SomePage`, which opens a **whole other
+  wiki, rendered**, or a link to an out-of-KB HTML report
+- served over `http(s)`: the browser **blocks every `file:` reference** — the image
+  falls back to its alt text, the link refuses to open. Web security, not a wiki limit
+- a `file:///…md` link is never rendered: browsers have no markdown renderer, you get
+  raw text. For a real wiki page the file must live under `articles/`
+
+Supported image formats: in bundled mode the wiki filters nothing — the browser
+paints `jpg` `png` `svg` `webp` `gif` and any other format it supports. Live-render
+mode scans the picked folder for the extensions listed by `imageExts` in `config.js`
+(png jpg jpeg gif svg webp by default).
+
 ## Footnote tricks
 
 References sit in the sentence, definitions at the bottom of the file.
