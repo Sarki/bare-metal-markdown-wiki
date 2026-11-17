@@ -18,7 +18,7 @@
    sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' */
 window.WIKI = {
   maxResults: 200,
-  wikiName: 'Testing the change', // shown in the topbar (after the book icon) and as "Page — name" tab titles
+  wikiName: 'Local Wiki', // shown in the topbar (after the book icon) and as "Page — name" tab titles
   tocSide: 'left',
   tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70, // article column width as % of the reading area; 10–100
@@ -28,7 +28,7 @@ window.WIKI = {
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // live-render mode only; add e.g. 'bmp' or 'avif' if your browser supports it
   brandIcon: '📚', // glyph before the wiki name in the topbar; '' hides it — the static index.html fallback keeps the default 📚
   favicon: '', // browser tab icon: image file next to index.html (keep it — it's yours, like this file), any URL, or a data: URI; '' = browser default
-  // first word of a badge → its color; unknown words stay the gray pill
+  // first word of a badge → its color, matched case-insensitively; unknown words stay the gray pill
   badgeColors: {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],

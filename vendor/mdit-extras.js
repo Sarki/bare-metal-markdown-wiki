@@ -185,8 +185,8 @@
         t.tabList = tabs;
         tabs.forEach(function (tab, n) {
           tab.token.tabPane = true;
-          tab.token.tabName = tab.name;
           tab.token.tabIndex = n;
+          tab.html = state.md.renderInline(tab.name); // titles get inline markdown: badges, bold, …
           tab.token.info = ''; // pane class is emitted by the renderer
         });
       }
@@ -198,7 +198,7 @@
       if (t.tabList) {
         var bar = '<div class="tabs-bar">' + t.tabList.map(function (tab, n) {
           return '<button type="button" class="' + (n === 0 ? 'active' : '') + '" data-i="' + n + '">' +
-                 escHtml(tab.name || ('Tab ' + (n + 1))) + '</button>';
+                 (tab.html || ('Tab ' + (n + 1))) + '</button>';
         }).join('') + '</div>';
         return '<div class="container tabs">\n' + bar + '\n';
       }
@@ -213,9 +213,7 @@
   /* Inline pill, e.g. "this is @{draft} since @{v1.0}". Anything
      between @{ and } becomes a <span class="badge">, escaped.
      A lone @ (like an e-mail) is left alone — the { is required.
-     Known status words get a color; the word list is a setting in the
-     window.WIKI block of index.html (badgeColors) — this file only
-     keeps the defaults for when the setting is missing. */
+     Known status words get a color; the badgeColors setting in config.js — this file only keeps the defaults for when the setting is missing. */
   var DEFAULT_BADGE_COLORS = {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
@@ -226,7 +224,9 @@
 
   function badges(md) {
     var COLORS = (global.WIKI && global.WIKI.badgeColors) || DEFAULT_BADGE_COLORS;
-    var RE = /@\{([^{}]+)\}/;
+    var LOOKUP = {}; // word → color, lowercased once: config entries match case-insensitively
+    for (var c in COLORS) (COLORS[c] || []).forEach(function (w) { LOOKUP[String(w).toLowerCase()] = c; });
+    var RE = /^@\{([^{}]+)\}/; // anchored: markdown-it calls inline rules at any stop-char, so an unanchored match would swallow the text before @{
     md.inline.ruler.push('mdit_badge', function (state, silent) {
       var m = RE.exec(state.src.slice(state.pos));
       if (!m) return false;
@@ -240,10 +240,8 @@
     md.renderer.rules.mdit_badge = function (tokens, idx) {
       var cls = 'badge';
       // the first word decides the color: @{draft review} → yellow
-      var word = tokens[idx].content.toLowerCase().split(/[\s\-/]+/)[0];
-      for (var k in COLORS) {
-        if (COLORS[k].indexOf(word) !== -1) { cls += ' badge--' + k; break; }
-      }
+      var k = LOOKUP[tokens[idx].content.toLowerCase().split(/[\s\-/]+/)[0]];
+      if (k) cls += ' badge--' + k;
       return '<span class="' + cls + '">' + escHtml(tokens[idx].content) + '</span>';
     };
   }

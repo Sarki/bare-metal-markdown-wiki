@@ -50,10 +50,11 @@ const cases = [
   ['tabs first pane open',  '::: tabs\n::: tab: Node\na\n:::\n::: tab: Python\nb\n:::\n:::\n', '<div class="tab-pane" data-i="0">'],
   ['tabs second hidden',    '::: tabs\n::: tab: Node\na\n:::\n::: tab: Python\nb\n:::\n:::\n', '<div class="tab-pane" data-i="1" hidden>'],
   ['tabs name with space',  '::: tabs\n::: tab: C Sharp\na\n:::\n:::\n', '>C Sharp</button>'],
-  ['tabs name escaped',     '::: tabs\n::: tab: <b>\na\n:::\n:::\n', '&lt;b&gt;'],
+  ['tabs name inline',      '::: tabs\n::: tab: @{draft wip} **x**\na\n:::\n:::\n', '<span class="badge badge--yellow">draft wip</span> <strong>x</strong>'],
   ['tabs fence inside',     '::: tabs\n::: tab: JS\n```js\nlet a = 1;\n```\n:::\n:::\n', 'language-js'],
   ['bare tabs stays plain', '::: tabs\njust text\n:::\n', 'container tabs">\n<p>just text</p>'],
   ['container inside pane', '::: tabs\n::: tab: A\n::: note\ninner\n:::\n:::\n:::\n', 'class="container note"'],
+  ['badge after punctuation',  'Status: @{stable} and @{draft} ok',  'Status: <span class="badge badge--green">stable</span> and <span class="badge badge--yellow">draft</span> ok'],
   ['badge basic',           'a @{stable} b',            '<span class="badge badge--green">stable</span>'],
   ['badge escaped',         '@{<b>}',                    '&lt;b&gt;'],
   ['badge two in a line',   '@{a} and @{b}',             '<span class="badge">a</span> and <span class="badge">b</span>'],
@@ -77,12 +78,19 @@ for (const [name, input, expect] of cases) {
   if (out.includes(expect)) pass++;
   else { fail++; console.error('FAIL: ' + name + '\n  in:   ' + JSON.stringify(input) + '\n  out:  ' + out + '\n  want: ' + expect); }
 }
-// the settings block (window.WIKI in index.html) overrides the vendor defaults
+// the settings file (window.WIKI in config.js) overrides the vendor defaults
 global.WIKI = { badgeColors: { green: ['xyz'] } };
 const md2 = new MarkdownIt({ html: true });
 md2.use(MditExtras.badges);
 const o = md2.render('a @{xyz} b @{stable}');
 if (o.includes('badge--green">xyz') && !o.includes('badge--green">stable')) pass++;
 else { fail++; console.error('FAIL: badgeColors setting override\n  out:  ' + o); }
-console.log('test-render: ' + pass + '/' + (cases.length + 1) + ' passed');
+// config entries match case-insensitively: { yellow: ['WIP'] } colors @{wip}
+global.WIKI = { badgeColors: { yellow: ['WIP'] } };
+const md3 = new MarkdownIt({ html: true });
+md3.use(MditExtras.badges);
+const o3 = md3.render('@{wip} @{WIP} @{Wip thing}');
+if ((o3.match(/badge--yellow/g) || []).length === 3) pass++;
+else { fail++; console.error('FAIL: badgeColors case-insensitive\n  out:  ' + o3); }
+console.log('test-render: ' + pass + '/' + (cases.length + 2) + ' passed');
 process.exit(fail ? 1 : 0);
