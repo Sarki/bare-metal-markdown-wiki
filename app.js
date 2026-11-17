@@ -522,6 +522,10 @@
     window.addEventListener('focus', refreshLive); // re-read live folder when the tab regains focus
     el('search').addEventListener('input', function (e) { doSearch(e.target.value); });
     el('search').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.target.value = ''; doSearch(''); } });
+    el('search').addEventListener('click', function (e) { if (e.target.value) doSearch(e.target.value); }); // query still in the box → panel comes back
+    document.addEventListener('click', function (e) { // any click outside box+panel dismisses the panel (text stays in the box)
+      if (!e.target.closest('.search-wrap, #searchResults')) el('searchResults').classList.add('hidden');
+    });
     el('searchResults').addEventListener('click', function () { el('search').blur(); });
     el('clearSearch').addEventListener('click', function () {
       el('search').value = ''; doSearch(''); el('search').focus();
