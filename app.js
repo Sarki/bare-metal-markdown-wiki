@@ -431,6 +431,7 @@
     el('page').classList.remove('home');
     if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
     else { renderPage(slug); document.title = (PAGES[slug] ? PAGES[slug].title : slug) + ' — ' + wikiName; }
+    el('content').scrollTop = 0; // hash-only navigation: the browser never resets the article container, so do it here
     renderSidebar(); // re-renders with the active page's folder chain open; ends with markActive()
   }
 
