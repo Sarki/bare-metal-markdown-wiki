@@ -13,3 +13,16 @@
 /* examples:
  .page { line-height: 1.8; }
  #page h2 { border-bottom: 2px solid var(--accent); } */
+
+/* logo image in the brand, instead of the 📚 glyph (set brandIcon: '' in
+   config.js): drop logo.svg next to index.html, then
+
+ .brand::before {
+   content: ''; display: inline-block;
+   width: 1.1em; height: 1.1em; margin-right: 0.3em; vertical-align: -0.2em;
+   background: url('logo.svg') center / contain no-repeat;
+ }
+
+ for a monochrome logo that follows the text color, swap the background line for:
+   mask: url('logo.svg') center / contain no-repeat; background: currentColor;
+ */

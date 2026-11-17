@@ -44,7 +44,9 @@
   let sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
   document.documentElement.style.setProperty('--page-w', Math.min(100, Math.max(10, parseInt(WIKI.pageWidth, 10) || 70)) + '%'); // article width cap, 10–100%
   const wikiName = (typeof WIKI.wikiName === 'string' && WIKI.wikiName.trim()) ? WIKI.wikiName.trim() : 'Local Wiki'; // shown in topbar + tab titles
-  document.querySelector('.brand').textContent = '\uD83D\uDCDA ' + wikiName; // keep the book icon, replace the default name
+  const brandIcon = typeof WIKI.brandIcon === 'string' ? WIKI.brandIcon : '\uD83D\uDCDA'; // topbar glyph before the name; '' hides it
+  document.querySelector('.brand').textContent = (brandIcon ? brandIcon + ' ' : '') + wikiName;
+  if (typeof WIKI.favicon === 'string' && WIKI.favicon) { const l = document.createElement('link'); l.rel = 'icon'; l.href = WIKI.favicon; document.head.appendChild(l); } // custom tab icon: file next to index.html, any URL, or a data: URI
 
   // ---------- frontmatter ----------
   function parseFrontmatter(src) {

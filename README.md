@@ -100,6 +100,8 @@ window.WIKI = {
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format
+  brandIcon: '📚',        // glyph before the wiki name in the topbar; '' hides it
+  favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = browser default
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
