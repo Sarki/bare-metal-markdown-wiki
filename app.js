@@ -38,6 +38,7 @@
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
   let tocSide = (WIKI.tocSide === 'right') ? 'right' : 'left'; // from the settings in config.js
+  const narrowMq = window.matchMedia('(max-width: 760px)'); // drawer breakpoint — keep in sync with the @media block in style.css
   let tocLevels = Math.min(6, Math.max(1, parseInt(WIKI.tocLevels, 10) || 3)); // TOC heading depth, 1–6
   let foldersOpen = WIKI.foldersOpen === true; // start with the sidebar folders expanded
   let landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
@@ -372,13 +373,19 @@
     tree.innerHTML = html;
     markActive();
   }
+  function syncModeGroup() { // narrow: the mode badge + live buttons ride the drawer, above the tree; wide: back in the topbar
+    const g = document.querySelector('.modegrp');
+    if (narrowMq.matches === (g.parentNode.id === 'sidebar')) return;
+    if (narrowMq.matches) el('sidebar').insertBefore(g, el('sidebar').firstChild);
+    else document.querySelector('.topbar').appendChild(g); // it was the last group already
+  }
   function markActive() {
     const slug = decodeURIComponent(location.hash.slice(1)) || '';
     const tree = el('tree');
     const links = Array.prototype.slice.call(tree.querySelectorAll('a'));
     links.forEach(function (a) { a.classList.toggle('active', a.dataset.slug === slug); });
     tree.querySelectorAll('.page-toc').forEach(function (n) { n.remove(); });
-    if (slug && tocHtml && tocSide === 'left') {
+    if (slug && tocHtml && (tocSide === 'left' || narrowMq.matches)) { // narrow: the right rail is gone, the TOC follows the drawer instead
       const act = links.find(function (a) { return a.dataset.slug === slug; });
       if (act) act.insertAdjacentHTML('afterend', tocHtml); // TOC sits directly under the file name
     }
@@ -432,6 +439,10 @@
   }
 
   // ---------- routing ----------
+  function closeNav() { // narrow-screen drawer: close it (also a harmless no-op on wide screens)
+    document.body.classList.remove('nav-open');
+    el('menuBtn').setAttribute('aria-expanded', 'false');
+  }
   function renderLanding() { // what the empty hash shows: the configured page, else the generated home
     if (landingPage && PAGES[landingPage]) { renderPage(landingPage); return PAGES[landingPage].title; }
     renderHome(); return 'Home';
@@ -440,6 +451,7 @@
     let slug = location.hash.slice(1);
     if (slug) slug = decodeURIComponent(slug);
     if (slug && /^(fn|fnref)-/.test(slug)) return; // in-page footnote anchor
+    closeNav(); // picking a page in the drawer closes it
     el('page').classList.remove('home');
     if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
     else { renderPage(slug); document.title = (PAGES[slug] ? PAGES[slug].title : slug) + ' — ' + wikiName; }
@@ -548,10 +560,20 @@
     });
     const tocScroll = function (e) {
       const a = e.target.closest('a.toclink');
-      if (a) { e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
+      if (a) { e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ behavior: 'smooth' }); closeNav(); } // inside the drawer, jumping into the article closes it
     };
     el('tree').addEventListener('click', tocScroll);
     el('tocRail').addEventListener('click', tocScroll);
+    // narrow screens: the hamburger opens the sidebar as an overlay drawer
+    el('menuBtn').addEventListener('click', function () {
+      const open = document.body.classList.toggle('nav-open');
+      this.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', function (e) { // backdrop, or any click outside the drawer, closes it
+      if (document.body.classList.contains('nav-open') && !e.target.closest('.sidebar, #menuBtn')) closeNav();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeNav(); });
+    narrowMq.addEventListener('change', function () { if (!narrowMq.matches) closeNav(); renderSidebar(); syncModeGroup(); }); // crossing the breakpoint moves the TOC between rail and tree, and the mode group between topbar and drawer
     el('tags').addEventListener('click', function (e) {
       const t = e.target.closest('.tag'); if (!t) return;
       activeTag = (activeTag === t.dataset.tag) ? '' : t.dataset.tag;
@@ -582,7 +604,7 @@
     if (mode !== 'live') loadBundled();
 
     buildIndex();
-    renderSidebar(); renderTags();
+    renderSidebar(); renderTags(); syncModeGroup();
     setMode(mode);
     window.addEventListener('hashchange', route);
     if (expandOnPrint) { // CSS can't open <details>, so open every fold in the article for the paper, then restore

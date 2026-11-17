@@ -15,18 +15,21 @@
 </head>
 <body>
   <header class="topbar">
+    <button id="menuBtn" class="btn" type="button" title="Menu" aria-expanded="false" aria-controls="sidebar">&#9776;</button>
     <a href="#" class="brand" data-home>&#128218; Local Wiki</a>
     <div class="search-wrap">
       <input id="search" type="text" placeholder="Search pages…" autocomplete="off" spellcheck="false">
       <button id="clearSearch" class="clearbtn" type="button" title="Clear search">&times;</button>
     </div>
-    <div id="mode" class="mode" title="Where pages come from: bundled snapshot (data.js) or a connected live folder"></div>
-    <button id="refresh" class="btn hidden" title="Re-read the connected folder now (live mode)">&#8635;</button>
-    <button id="choose" class="btn hidden" title="Point the wiki at your markdown folder for live rendering (one-time, remembered).">Live render</button>
+    <div class="modegrp">
+      <div id="mode" class="mode" title="Where pages come from: bundled snapshot (data.js) or a connected live folder"></div>
+      <button id="refresh" class="btn hidden" title="Re-read the connected folder now (live mode)">&#8635;</button>
+      <button id="choose" class="btn hidden" title="Point the wiki at your markdown folder for live rendering (one-time, remembered).">Live render</button>
+    </div>
   </header>
 
   <div class="layout">
-    <aside class="sidebar">
+    <aside id="sidebar" class="sidebar">
       <nav id="tree" class="tree"></nav>
       <div id="tags" class="tags"></div>
     </aside>
