@@ -199,7 +199,7 @@
     if (!window.hljs) return;
     pageNode.querySelectorAll('pre code').forEach(function (c) {
       if (/language-mermaid\b/.test(c.className)) return;
-      try { c.innerHTML = hljs.highlight(c.textContent, { ignoreIllegals: true }).value; c.classList.add('hljs'); } catch (e) {}
+      try { hljs.highlightElement(c); } catch (e) {} // reads the language-js class markdown-it already set; auto-detects when the fence has no language
     });
   }
   function runKaTeX(pageNode) {
