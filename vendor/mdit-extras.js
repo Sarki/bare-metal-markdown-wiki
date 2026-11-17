@@ -3,7 +3,8 @@
    Implements, as plain <script> (no bundler, no ES modules,
    works from file://):
      MditExtras.container(md)  — ::: name … ::: block containers
-                                 (like @mdit/plugin-container)
+                                 (like @mdit/plugin-container), incl. the
+                                 ::: fold Title collapsible variant
      MditExtras.alerts(md)     — GitHub-style > [!NOTE] alerts
                                  (like @mdit/plugin-alert)
      MditExtras.tabs(md)       — ::: tabs / ::: tab: Name panels
@@ -56,13 +57,15 @@
       state.parentType = 'container';
       state.lineMax = nextLine; // keep lazy continuations from crossing the end
 
-      var open = state.push('mdit_container_open', 'div', 1);
+      var fm = /^fold(!)?(?:[ \t]+(.*))?$/.exec(name); // ::: fold Title — collapsible section; "fold!" starts open, no title → browser's built-in label
+      var open = state.push('mdit_container_open', fm ? 'details' : 'div', 1);
       open.markup = '::: ' + name; open.block = true; open.info = name;
       open.map = [startLine, nextLine];
+      if (fm) { open.foldOpen = !!fm[1]; open.foldTitleHtml = fm[2] ? state.md.renderInline(fm[2]) : ''; } // titles get inline markdown, like tab names
 
       state.md.block.tokenize(state, startLine + 1, nextLine);
 
-      var close = state.push('mdit_container_close', 'div', -1);
+      var close = state.push('mdit_container_close', fm ? 'details' : 'div', -1);
       close.block = true;
 
       state.parentType = oldParent;
@@ -77,6 +80,12 @@
 
     function render(tokens, idx, options, env, self) {
       if (tokens[idx].nesting === 1) {
+        if (tokens[idx].tag === 'details') { // fold container: <details>, closed by the same rules as any container
+          tokens[idx].attrSet('class', 'fold');
+          if (tokens[idx].foldOpen) tokens[idx].attrSet('open', '');
+          return self.renderToken(tokens, idx, options, env, self) +
+                 (tokens[idx].foldTitleHtml ? '<summary>' + tokens[idx].foldTitleHtml + '</summary>' : '');
+        }
         tokens[idx].attrSet('class', 'container' + (tokens[idx].info ? ' ' + tokens[idx].info : ''));
       }
       return self.renderToken(tokens, idx, options, env, self);

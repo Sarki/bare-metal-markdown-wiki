@@ -13,6 +13,7 @@
    imageExts   : extensions read as images in live-render mode (bundled mode needs no list, the browser paints any format)
    brandIcon   : glyph before the wiki name in the topbar (any emoji/character); '' hides it
    favicon     : tab icon — image file next to index.html, URL, or data: URI; '' = browser default
+   expandOnPrint : open every ::: fold section when printing (false keeps them closed)
    badgeColors : which first-words color inline @{ badges }
    landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
    sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' */
@@ -26,8 +27,9 @@ window.WIKI = {
   landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // live-render mode only; add e.g. 'bmp' or 'avif' if your browser supports it
-  brandIcon: '📚', // glyph before the wiki name in the topbar; '' hides it — the static index.html fallback keeps the default 📚
+  brandIcon: '📚', // glyph before the wiki name in the topbar; '' hides it — the static index.html fallback keeps the default 📚; for an image, go to user.css
   favicon: '', // browser tab icon: image file next to index.html (keep it — it's yours, like this file), any URL, or a data: URI; '' = browser default
+  expandOnPrint: true, // printing opens every fold section so nothing is hidden on paper; false keeps folds as you left them
   // first word of a badge → its color, matched case-insensitively; unknown words stay the gray pill
   badgeColors: {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],

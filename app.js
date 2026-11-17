@@ -47,6 +47,7 @@
   const brandIcon = typeof WIKI.brandIcon === 'string' ? WIKI.brandIcon : '\uD83D\uDCDA'; // topbar glyph before the name; '' hides it
   document.querySelector('.brand').textContent = (brandIcon ? brandIcon + ' ' : '') + wikiName;
   if (typeof WIKI.favicon === 'string' && WIKI.favicon) { const l = document.createElement('link'); l.rel = 'icon'; l.href = WIKI.favicon; document.head.appendChild(l); } // custom tab icon: file next to index.html, any URL, or a data: URI
+  const expandOnPrint = WIKI.expandOnPrint !== false; // open every fold in the article right before printing, restore after
 
   // ---------- frontmatter ----------
   function parseFrontmatter(src) {
@@ -569,6 +570,17 @@
     renderSidebar(); renderTags();
     setMode(mode);
     window.addEventListener('hashchange', route);
+    if (expandOnPrint) { // CSS can't open <details>, so open every fold in the article for the paper, then restore
+      let openedForPrint = [];
+      window.addEventListener('beforeprint', function () {
+        openedForPrint = Array.prototype.filter.call(document.querySelectorAll('#page details.fold'), function (d) { return !d.open; });
+        openedForPrint.forEach(function (d) { d.open = true; });
+      });
+      window.addEventListener('afterprint', function () {
+        openedForPrint.forEach(function (d) { d.open = false; });
+        openedForPrint = [];
+      });
+    }
     route();
     lastRefresh = Date.now();
   }

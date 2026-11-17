@@ -344,6 +344,13 @@ img { max-width: 100%; }
 .container > :first-child { margin-top: 0; }
 .container > :last-child { margin-bottom: 0; }
 
+/* ::: fold Title — collapsible section (native <details>, no JS needed) */
+details.fold { margin: 12px 0; border-left: 0.25em solid var(--accent); background: var(--code-bg); border-radius: 0 8px 8px 0; }
+details.fold > summary { padding: 8px 16px; font-weight: 600; cursor: pointer; }
+details.fold > *:not(summary) { margin: 10px 16px; }
+details.fold > *:not(summary):first-child { margin-top: 0; }
+details.fold > *:not(summary):last-child { margin-bottom: 0; }
+
 /* Tab panels: ::: tabs / ::: tab: Name (vendor/mdit-extras.js) */
 .tabs { padding: 0; border-left: none; background: none; }
 .tabs-bar {

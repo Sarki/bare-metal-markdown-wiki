@@ -5,9 +5,9 @@ tags: howto
 
 # Formatting
 
-The three extras on top of standard Markdown: **block containers**,
-**alerts** and **tab panels**. Each section shows the syntax, then a
-live example.
+The extras on top of standard Markdown: **block containers**,
+**alerts**, **tab panels** and **foldable sections**. Each section shows
+the syntax, then a live example.
 
 ## Block containers
 
@@ -79,6 +79,33 @@ print('tabbed')
 :::
 :::
 
+## Foldable sections
+
+A `fold` container collapses its content behind a clickable title —
+click to open, click to close. `fold!` starts open; no title uses the
+browser's default label. It's a native disclosure, so keyboard and
+screen readers work for free:
+
+````markdown
+::: fold Implementation notes
+Anything renders inside — even this fenced code block:
+```js
+console.log('hidden until opened');
+```
+:::
+````
+
+::: fold Implementation notes
+Anything renders inside — even this fenced code block:
+```js
+console.log('hidden until opened');
+```
+:::
+
+Folds nest, and the title takes inline markdown (badges, bold, …).
+Printing opens every fold automatically, so nothing stays hidden on
+paper — turn that off with `expandOnPrint: false` in `config.js`.
+
 ## Inline badges
 
 Wrap `@{ name }` to render a small pill — handy for statuses, versions,
@@ -95,8 +122,7 @@ Known status words get a color — the first word decides:
 @{draft} @{wip} @{review} · @{stable} @{done} @{passed} · @{error} @{broken} @{deprecated} · @{new} @{beta} · @{alpha} @{planned}
 
 Anything else stays the neutral gray pill. The word list is the
-`badgeColors` setting in the block at the top of `index.html` — add
-your own words there.
+`badgeColors` setting in `config.js` — add your own words there.
 
 A lone `@` (like in an e-mail address) is left alone — the `{` is what
 triggers the badge.

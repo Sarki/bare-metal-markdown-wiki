@@ -102,6 +102,7 @@ window.WIKI = {
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format
   brandIcon: '📚',        // glyph before the wiki name in the topbar; '' hides it
   favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = browser default
+  expandOnPrint: true,    // open every fold section when printing; false keeps folds as you left them
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
@@ -180,6 +181,14 @@ print('tabbed')
 :::
 :::
 ````
+
+Foldable sections (collapsed behind a clickable title; `fold!` starts open, no title uses the browser's default label):
+
+```
+::: fold Implementation notes
+Any Markdown inside, click the title to open or close.
+:::
+```
 
 Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block):
 
