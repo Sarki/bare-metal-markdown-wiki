@@ -255,5 +255,39 @@
     };
   }
 
-  global.MditExtras = { container: container, alerts: alerts, tabs: tabs, badges: badges };
+  /* ── buttons: @[label](target) ─────────────────────────────── */
+  /* Any link prefixed with @ renders as <a class="btn">. The built-in
+     link rule does all the parsing, so the label keeps inline markdown,
+     validateLink still blocks dangerous schemes, and app.js's post-pass
+     (.md -> wiki slug, .html new-tab) applies unchanged. "@[[wiki link]]"
+     works too because app.js rewrites [[..]] before rendering. A \@ or a
+     space between the @ and the link keeps a plain link. An optional
+     {color} suffix (green/yellow/red/blue/purple) fills the button. */
+  function buttons(md) {
+    // after 'inline': link tokens and their labels exist by now
+    md.core.ruler.after('inline', 'mdit_button', function (state) {
+      state.tokens.forEach(function (t) {
+        if (t.type !== 'inline' || !t.children) return;
+        var ch = t.children;
+        for (var i = 1; i < ch.length; i++) {
+          if (ch[i].type === 'link_open' && ch[i - 1].type === 'text' &&
+              /@$/.test(ch[i - 1].content) && !/\\@$/.test(ch[i - 1].markup)) {
+            ch[i - 1].content = ch[i - 1].content.slice(0, -1); // drop the marker
+            ch[i].attrJoin('class', 'btn');
+            // optional color suffix, @[label](target){red} — same palette names as
+            // badges; unknown names and non-button links leave {name} as plain text
+            var k = i + 1;
+            while (k < ch.length && ch[k].type !== 'link_close') k++;
+            var nx = ch[k + 1]; // a link label cannot contain another link: first close wins
+            if (nx && nx.type === 'text') {
+              var m = /^\{(green|yellow|red|blue|purple)\}/.exec(nx.content);
+              if (m) { nx.content = nx.content.slice(m[0].length); ch[i].attrJoin('class', 'btn--' + m[1]); }
+            }
+          }
+        }
+      });
+    });
+  }
+
+  global.MditExtras = { container: container, alerts: alerts, tabs: tabs, badges: badges, buttons: buttons };
 })(window);

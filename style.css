@@ -172,6 +172,22 @@ img { max-width: 100%; }
 .btn:hover { background: var(--accent-soft); border-color: var(--accent); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* button links inside articles — the @[label](target) markdown syntax:
+   same skin as the topbar .btn, filled with the accent so CTAs stand out */
+#page a.btn { background: var(--accent); border-color: var(--accent); color: #fff; }
+#page a.btn:hover { background: #0550ae; border-color: #0550ae; text-decoration: none; }
+/* @[x](u){color} — text stays white, so the fills are the badge colors darkened where needed */
+#page a.btn--green  { background: #1a7f37; border-color: #1a7f37; }
+#page a.btn--green:hover { background: #136729; border-color: #136729; }
+#page a.btn--yellow { background: #9a6700; border-color: #9a6700; }
+#page a.btn--yellow:hover { background: #7c5300; border-color: #7c5300; }
+#page a.btn--red    { background: #cf222e; border-color: #cf222e; }
+#page a.btn--red:hover { background: #a0111d; border-color: #a0111d; }
+#page a.btn--blue   { background: #0969da; border-color: #0969da; }
+#page a.btn--blue:hover { background: #0550ae; border-color: #0550ae; }
+#page a.btn--purple { background: #8250df; border-color: #8250df; }
+#page a.btn--purple:hover { background: #6639ba; border-color: #6639ba; }
+
 /* hamburger: hidden everywhere except the narrow-screen block, where the
    sidebar turns into an overlay drawer it toggles */
 #menuBtn { display: none; }

@@ -127,6 +127,36 @@ Anything else stays the neutral gray pill. The word list is the
 A lone `@` (like in an e-mail address) is left alone — the `{` is what
 triggers the badge.
 
+## Button links
+
+Prefix any link with `@` and it renders as a button — handy for "get
+started" or next-page calls to action inside an article:
+
+```markdown
+@[back to basics](Basics.md) @[[Advanced|try diagrams and math]]
+```
+
+@[back to basics](Basics.md) @[[Advanced|try diagrams and math]]
+
+Targets work exactly like any other link: relative paths, `[[wiki
+links]]` (the `@` just goes before the `[[`), external URLs, local
+`.html` files. The label keeps inline markdown (bold, badges, …). The
+`@` must sit directly against the link — a space between (`me @ [x](u)`)
+or a backslash (`me\@[x](u)`) keeps a plain link.
+
+An optional `{color}` suffix right after the link picks the fill color
+— same palette as the badges: `{green}`, `{yellow}`, `{red}`, `{blue}`
+(the default), `{purple}`:
+
+@[a green one](Basics.md){green} @[[Advanced|and a red one]]{red}
+
+Unknown names are not swallowed: they stay as literal text right after
+the button, so a typo shows up on the page instead of being silently
+ignored.
+
+Want other colors? The classes are `btn--green` … on `#page a` — restyle
+them (or add your own) in `user.css`.
+
 ## Links that open a new tab
 
 External links — `https://…` and `mailto:…`, written or bare — open in

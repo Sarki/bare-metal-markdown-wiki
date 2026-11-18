@@ -23,7 +23,7 @@
   const md = window.markdownit({ html: true, linkify: true, typographer: false, breaks: false });
   const defValidateLink = md.validateLink.bind(md); // markdown-it blocks non-http schemes for links AND images; let file:// through (works when the wiki itself runs on file://, browsers block it over http — nothing more we can do)
   md.validateLink = function (u) { return /^file:\/\/\//i.test(u) || defValidateLink(u); };
-  if (window.MditExtras) { md.use(MditExtras.container); md.use(MditExtras.alerts); md.use(MditExtras.tabs); md.use(MditExtras.badges); } // ::: containers, > [!NOTE] alerts, ::: tabs, @{ badges }
+  if (window.MditExtras) { md.use(MditExtras.container); md.use(MditExtras.alerts); md.use(MditExtras.tabs); md.use(MditExtras.badges); md.use(MditExtras.buttons); } // ::: containers, > [!NOTE] alerts, ::: tabs, @{ badges }, @[button links]
   if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: 'default' }); } catch (e) {} }
 
   // ---------- state ----------

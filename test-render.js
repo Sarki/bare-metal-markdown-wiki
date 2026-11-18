@@ -18,6 +18,7 @@ md.use(MditExtras.container);
 md.use(MditExtras.alerts);
 md.use(MditExtras.tabs);
 md.use(MditExtras.badges);
+md.use(MditExtras.buttons);
 
 const cases = [
   // [name, input, mustContain]
@@ -71,6 +72,15 @@ const cases = [
   ['badge color red',       '@{deprecated}',              'badge--red'],
   ['badge color multiword', '@{draft review}',            'badge--yellow'],
   ['badge gray fallback',   '@{v1.0}',                    '<span class="badge">v1.0</span>'],
+  ['button basic',          'go @[start](a/Basics.md)',   '<a href="a/Basics.md" class="btn">start</a>'],
+  ['button label markdown', '@[**go** now](u)',           '<a href="u" class="btn"><strong>go</strong> now</a>'],
+  ['plain link no button',  'plain [x](u) and me@ and [y](v)', 'plain <a href="u">x</a>'],
+  ['escaped @ no button',   'foo\\@[x](u)',               'foo@<a href="u">x</a>'],
+  ['button scheme blocked', '@[bad](javascript:alert(1))', '@[bad](javascript'],
+  ['button with title',     '@[x](u "t")',                'title="t" class="btn"'],
+  ['button color',          '@[x](u){red}',               '<a href="u" class="btn btn--red">x</a>'],
+  ['button color unknown',  '@[x](u){mauve}',             'class="btn">x</a>{mauve}'],
+  ['plain link color kept', '[x](u){red}',                '<a href="u">x</a>{red}'],
   // baseline: stock markdown still works
   ['fence',                  '```js\nlet a = 1;\n```\n',                         'language-js'],
   ['inline code',            'use `x()` now',                                     '<code>x()</code>'],

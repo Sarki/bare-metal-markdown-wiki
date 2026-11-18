@@ -199,6 +199,12 @@ Inline badges (small pill, anything between `@{` and `}`; known statuses like `d
 This page is @{draft} and the plugin is @{v1.0} stable.
 ```
 
+Button links — any link prefixed with `@` renders as a button (works with `[[wiki links]]` too; an optional `{green|yellow|red|blue|purple}` suffix sets the fill color):
+
+```markdown
+@[Get started](Guides/Basics.md) @[[Advanced|see what's advanced]]
+```
+
 
 Link resolution:
 
