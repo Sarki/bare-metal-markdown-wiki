@@ -266,6 +266,15 @@
     el('content').classList.toggle('toc-right', show);
     el('tocRail').classList.toggle('hidden', !show);
     el('tocRail').innerHTML = show ? tocHtml : '';
+    markTocPosition();
+  }
+  function markTocPosition() { // scroll-spy: the TOC link of the section the article is currently scrolled into lights up
+    const links = document.querySelectorAll('.page-toc .toclink');
+    if (!links.length) return;
+    const cTop = el('content').getBoundingClientRect().top;
+    let cur = null; // links are in heading order: the last one already scrolled past the top edge wins
+    Array.prototype.forEach.call(links, function (l) { const h = document.getElementById(l.getAttribute('href').slice(1)); if (h && h.getBoundingClientRect().top - cTop <= 8) cur = l; });
+    Array.prototype.forEach.call(links, function (l) { l.classList.toggle('active', l === cur); });
   }
   function renderBacklinks(slug) {
     const box = el('backlinks');
@@ -390,6 +399,7 @@
       const act = links.find(function (a) { return a.dataset.slug === slug; });
       if (act) act.insertAdjacentHTML('afterend', tocHtml); // TOC sits directly under the file name
     }
+    markTocPosition();
   }
   function renderTags() {
     const box = el('tags');
@@ -565,6 +575,8 @@
       if (a) { e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ behavior: 'smooth' }); closeNav(); } // inside the drawer, jumping into the article closes it
     };
     el('tree').addEventListener('click', tocScroll);
+    let spyRaf = 0; // scroll-spy, rAF-throttled: one pass per frame at most
+    el('content').addEventListener('scroll', function () { if (!spyRaf) spyRaf = requestAnimationFrame(function () { spyRaf = 0; markTocPosition(); }); }, { passive: true });
     el('tree').addEventListener('click', function (e) { // clicking the current page's entry: same hash means no hashchange, so scroll the article back to the top
       const a = e.target.closest('a[data-slug]');
       if (a && a.dataset.slug === decodeURIComponent(location.hash.slice(1))) { e.preventDefault(); closeNav(); el('content').scrollTo({ top: 0, behavior: 'smooth' }); }

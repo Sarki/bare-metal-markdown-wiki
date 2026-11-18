@@ -297,6 +297,7 @@ img { max-width: 100%; }
   font-size: 13px;
 }
 .page-toc a:hover { color: var(--accent); background: #eaeef2; text-decoration: none; }
+.page-toc a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; } /* scroll-spy current section, same look as the active tree entry */
 .page-toc .toc-l1 { padding-left: 26px; }
 .page-toc .toc-l2 { padding-left: 38px; }
 .page-toc .toc-l3 { padding-left: 50px; }
