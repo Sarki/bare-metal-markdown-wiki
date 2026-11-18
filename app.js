@@ -248,8 +248,9 @@
     try { document.execCommand('copy'); } catch (e) {}
     t.remove();
   }
-  function buildToc(pageNode) {
-    const heads = Array.prototype.slice.call(pageNode.querySelectorAll('h1,h2,h3,h4,h5,h6')).filter(function (h) { return +h.tagName[1] <= tocLevels; }); // tagName is uppercase: 'H2'[1] -> 2
+  function buildToc(pageNode, pageTitle) { // an h1 that echoes the shown title duplicates the sidebar/rail link — skip it
+    const t = (pageTitle || '').trim().toLowerCase();
+    const heads = Array.prototype.slice.call(pageNode.querySelectorAll('h1,h2,h3,h4,h5,h6')).filter(function (h) { const lvl = +h.tagName[1]; return lvl <= tocLevels && (lvl > 1 || h.textContent.trim().toLowerCase() !== t); }); // tagName is uppercase: 'H2'[1] -> 2
     if (!heads.length) { tocHtml = ''; placeToc(); return; }
     let html = '';
     heads.forEach(function (h) {
@@ -299,7 +300,7 @@
     runKaTeX(page);
     runMermaid(page);
     addCopyButtons(page);
-    buildToc(page);
+    buildToc(page, p.title);
     renderBacklinks(slug);
   }
 
@@ -441,7 +442,8 @@
   // ---------- routing ----------
   function closeNav() { // narrow-screen drawer: close it (also a harmless no-op on wide screens)
     document.body.classList.remove('nav-open');
-    el('menuBtn').setAttribute('aria-expanded', 'false');
+    const b = el('menuBtn');
+    if (b) b.setAttribute('aria-expanded', 'false');
   }
   function renderLanding() { // what the empty hash shows: the configured page, else the generated home
     if (landingPage && PAGES[landingPage]) { renderPage(landingPage); return PAGES[landingPage].title; }
@@ -563,6 +565,10 @@
       if (a) { e.preventDefault(); const t = document.getElementById(a.getAttribute('href').slice(1)); if (t) t.scrollIntoView({ behavior: 'smooth' }); closeNav(); } // inside the drawer, jumping into the article closes it
     };
     el('tree').addEventListener('click', tocScroll);
+    el('tree').addEventListener('click', function (e) { // clicking the current page's entry: same hash means no hashchange, so scroll the article back to the top
+      const a = e.target.closest('a[data-slug]');
+      if (a && a.dataset.slug === decodeURIComponent(location.hash.slice(1))) { e.preventDefault(); closeNav(); el('content').scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
     el('tocRail').addEventListener('click', tocScroll);
     // narrow screens: the hamburger opens the sidebar as an overlay drawer
     el('menuBtn').addEventListener('click', function () {
