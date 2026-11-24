@@ -22,7 +22,11 @@ works from a plain `file://` double-click.
 - Backlinks panel under every page
 - Frontmatter **tags** with one-click filtering
 - Live full-text search with the searched terms highlighted (result cap and
-  panel width/height set in the settings block)
+  panel width/height set in the settings block); ⌘K (Ctrl K elsewhere) jumps to the search box
+- Light and dark mode: follows the system, or pick Light/Dark with the theme button
+  in the top bar (remembered per browser; hidden when `user.css` forces a mode).
+  Printing always uses light colours, but Mermaid diagrams keep the colours they
+  were drawn in: switch to Light before printing a page with diagrams
 - Per-page table of contents — placement set in the settings block:
   *left* (sidebar, under the page's file name) or *right* (rail beside the article)
 - Hash routing — `#path/to/page` deep links, browser back/forward work
@@ -78,13 +82,44 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
   Chrome/Edge)
 - Pick your Markdown folder **once**; the choice is remembered (IndexedDB) and
   reused on every later open
-- The folder is **re-read automatically when the tab regains focus**, plus a
-  **↻** button for manual refresh — the closest a serverless `file://` page
-  can get to a file watcher
+- The folder is **checked for changes every 5 seconds** and re-read when the
+  tab regains focus, plus a **↻** button for manual refresh — a serverless
+  `file://` page has no real file watcher
 
 Browsers cannot let a `file://` page read sibling folders without a one-time
 user grant; that is the one unavoidable click. In Firefox/Safari the button
 is hidden and the bundled snapshot is used instead.
+
+### Editing (live render only)
+
+In live render mode every page has an **Edit** button. It opens the page's
+Markdown in a text box; **Save** writes the `.md` file straight back to the
+folder, **Cancel** throws the changes away. The browser may ask for
+permission to write to the folder.
+
+Put the wiki on a shared network drive and several people can work on it with
+no server: everyone opens `index.html` from the drive in Chrome or Edge and
+picks the same folder. Each open wiki checks the folder every 5 seconds and
+shows changes made by others (it pauses while the tab is in the background or
+while you are editing). While you are editing, the **Live render** button does
+nothing; save or cancel first to switch folders.
+
+- If someone else saved the page while you were editing it, **Save** refuses
+  and keeps your text in the box, so you can copy it and redo the edit on their
+  version. Two saves made at nearly the same moment can still overwrite one
+  another — there is no locking without a server, and on a slow drive the
+  unprotected moment lasts as long as the write itself.
+- Pages are saved as UTF-8 text without a byte-order mark. A page in another
+  encoding (for example Windows "ANSI") cannot be edited here; convert it to
+  UTF-8 first.
+- A file with Windows line endings keeps them when saved.
+- Leaving the page while editing discards unsaved changes.
+- Firefox and Safari cannot write to a folder, so they get no Edit button and
+  only see the bundled `data.js` snapshot, which does not include edits until
+  someone re-runs the build.
+- Pages can contain HTML, and the wiki runs it as is. Anyone who can write to
+  the folder can therefore run script in everyone else's browser, so share
+  the folder only with people you trust.
 
 ## Settings
 
@@ -93,18 +128,18 @@ Local-first means settings live in the file, not in the UI. Edit `config.js`:
 ```javascript
 window.WIKI = {
   maxResults: 200,   // maximum number of search results to display
-  searchWidth: 50,   // results panel width as % of the window; 10–100
+  searchWidth: 50,   // results panel width as % of the window; 10–100 (full width at 760px and below)
   searchHeight: 60,  // results panel max height as % of the window; 10–100
   wikiName: 'Local Wiki', // shown in the topbar and as "Page — name" tab titles
   tocSide: 'left',   // 'left' (sidebar) or 'right' (rail beside the article)
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
-  pageWidth: 70,     // article column width as % of the reading area; 10–100
+  pageWidth: 70,     // article column width as % of the reading area; 10–100 (full width at 760px and below)
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format
-  brandIcon: '📚',        // glyph before the wiki name in the topbar; '' hides it
-  favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = browser default
+  // brandIcon: '📚',     // left out = built-in logo; any emoji/character replaces it; '' hides it
+  favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = built-in logo
   expandOnPrint: true,    // open every fold section when printing; false keeps folds as you left them
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
