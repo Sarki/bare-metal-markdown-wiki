@@ -7,6 +7,14 @@
 
   // ---------- tiny helpers ----------
   function el(id) { return document.getElementById(id); }
+  function usesDarkScheme(scheme, systemDark) { // same rule the browser uses to resolve light-dark() in style.css
+    const allowed = scheme.split(' ');
+    return allowed.includes('dark') && (systemDark || !allowed.includes('light'));
+  }
+  function nextTheme(t) { return { system: 'light', light: 'dark', dark: 'system' }[t]; } // the theme button cycles System → Light → Dark
+  function isSearchShortcut(e, mac) { // Cmd K on a Mac, Ctrl K elsewhere; Ctrl K on a Mac keeps its text-field meaning (delete to end of line)
+    return (mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k';
+  }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -24,7 +32,11 @@
   const defValidateLink = md.validateLink.bind(md); // markdown-it blocks non-http schemes for links AND images; let file:// through (works when the wiki itself runs on file://, browsers block it over http — nothing more we can do)
   md.validateLink = function (u) { return /^file:\/\/\//i.test(u) || defValidateLink(u); };
   if (window.MditExtras) { md.use(MditExtras.container); md.use(MditExtras.alerts); md.use(MditExtras.tabs); md.use(MditExtras.badges); md.use(MditExtras.buttons); } // ::: containers, > [!NOTE] alerts, ::: tabs, @{ badges }, @[button links]
-  if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: 'default' }); } catch (e) {} }
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  function currentMermaidTheme() { return usesDarkScheme(getComputedStyle(document.documentElement).colorScheme, systemDark.matches) ? 'dark' : 'default'; }
+  function initMermaid(theme) { if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: theme }); } catch (e) {} } }
+  let mermaidTheme = currentMermaidTheme();
+  initMermaid(mermaidTheme);
 
   // ---------- state ----------
   const WIKI = window.WIKI || {}; // settings live in config.js; every key has a built-in default
@@ -51,9 +63,12 @@
   document.documentElement.style.setProperty('--search-w', Math.min(100, Math.max(10, parseInt(WIKI.searchWidth, 10) || 50)) + '%'); // search panel width, 10–100% of the window
   document.documentElement.style.setProperty('--search-h', Math.min(100, Math.max(10, parseInt(WIKI.searchHeight, 10) || 60)) + 'vh'); // search panel max height, 10–100% of the window
   const wikiName = (typeof WIKI.wikiName === 'string' && WIKI.wikiName.trim()) ? WIKI.wikiName.trim() : 'Local Wiki'; // shown in topbar + tab titles
-  const brandIcon = typeof WIKI.brandIcon === 'string' ? WIKI.brandIcon : '\uD83D\uDCDA'; // topbar glyph before the name; '' hides it
-  document.querySelector('.brand').textContent = (brandIcon ? brandIcon + ' ' : '') + wikiName;
-  if (typeof WIKI.favicon === 'string' && WIKI.favicon) { const l = document.createElement('link'); l.rel = 'icon'; l.href = WIKI.favicon; document.head.appendChild(l); } // custom tab icon: file next to index.html, any URL, or a data: URI
+  document.querySelector('.brand-name').textContent = wikiName;
+  if (typeof WIKI.brandIcon === 'string') { // unset keeps the built-in mark; '' hides it; any other text replaces it
+    const mark = document.querySelector('.brand-mark');
+    if (WIKI.brandIcon) { mark.textContent = WIKI.brandIcon; mark.classList.add('brand-glyph'); } else mark.remove();
+  }
+  if (typeof WIKI.favicon === 'string' && WIKI.favicon) el('favicon').href = WIKI.favicon; // custom tab icon: file next to index.html, any URL, or a data: URI
   const expandOnPrint = WIKI.expandOnPrint !== false; // open every fold in the article right before printing, restore after
 
   // ---------- frontmatter ----------
@@ -225,19 +240,32 @@
       });
     } catch (e) {}
   }
+  let mermaidQueue = Promise.resolve();
+  function queueMermaid(job) { mermaidQueue = mermaidQueue.then(job).catch(function () {}); }
   function runMermaid(pageNode) {
     const nodes = [];
     pageNode.querySelectorAll('pre code.language-mermaid').forEach(function (code) {
-      const div = document.createElement('div'); div.className = 'mermaid'; div.textContent = code.textContent;
+      const div = document.createElement('div'); div.className = 'mermaid'; div.textContent = div.dataset.src = code.textContent;
       const pre = code.closest('pre'); pre.replaceWith(div); nodes.push(div);
     });
-    if (nodes.length && window.mermaid) { try { mermaid.run({ nodes: nodes }); } catch (e) {} }
+    if (nodes.length && window.mermaid) queueMermaid(function () { return mermaid.run({ nodes: nodes }); });
+  }
+  function redrawMermaid() { // mermaid bakes its theme into the SVG: when the mode flips, draw the page's diagrams again from their source
+    const theme = currentMermaidTheme();
+    if (theme === mermaidTheme) return;
+    mermaidTheme = theme;
+    queueMermaid(function () {
+      initMermaid(mermaidTheme);
+      const nodes = Array.from(el('page').querySelectorAll('.mermaid[data-src]'));
+      nodes.forEach(function (n) { n.removeAttribute('data-processed'); n.textContent = n.dataset.src; });
+      if (nodes.length && window.mermaid) return mermaid.run({ nodes: nodes });
+    });
   }
   function addCopyButtons(pageNode) {
     pageNode.querySelectorAll('pre').forEach(function (pre) {
       if (pre.querySelector('.copybtn')) return;
       const b = document.createElement('button');
-      b.className = 'copybtn'; b.type = 'button'; b.textContent = '\uD83D\uDCCB'; b.title = 'Copy code snippet'; // 📋
+      b.className = 'copybtn'; b.type = 'button'; b.title = 'Copy code snippet'; b.setAttribute('aria-label', 'Copy code snippet');
       pre.appendChild(b);
     });
   }
@@ -278,7 +306,7 @@
     if (!links.length) return;
     const cTop = el('content').getBoundingClientRect().top;
     let cur = null; // links are in heading order: the last one already scrolled past the top edge wins
-    Array.prototype.forEach.call(links, function (l) { const h = document.getElementById(l.getAttribute('href').slice(1)); if (h && h.getBoundingClientRect().top - cTop <= 8) cur = l; });
+    Array.prototype.forEach.call(links, function (l) { const h = document.getElementById(l.getAttribute('href').slice(1)); if (h && h.getBoundingClientRect().top - cTop <= 20) cur = l; });
     Array.prototype.forEach.call(links, function (l) { l.classList.toggle('active', l === cur); });
   }
   function renderBacklinks(slug) {
@@ -337,7 +365,7 @@
     }).join('') + '</ul>';
     html += '<h2>All pages</h2>';
     Object.keys(byFolder).sort().forEach(function (f) {
-      html += '<div class="grp" style="font-size:12px;color:var(--muted);margin:12px 0 4px;font-weight:700">' + escapeHtml(f) + '</div><ul>';
+      html += '<div class="home-folder">' + escapeHtml(f) + '</div><ul>';
       byFolder[f].slice().sort(function (a, b) { return titleOf(a).localeCompare(titleOf(b)); }).forEach(function (s) {
         html += '<li><a href="#' + encodeURIComponent(s) + '">' + escapeHtml(titleOf(s)) + '</a></li>';
       });
@@ -649,6 +677,26 @@
     window.addEventListener('focus', function () { if (!loading) refreshLive(); }); // re-read live folder when the tab regains focus
     setInterval(pollLive, 5000);
     el('search').addEventListener('input', function (e) { doSearch(e.target.value); });
+    const themeBtn = el('themeBtn');
+    const themeName = { system: 'System', light: 'Light', dark: 'Dark' };
+    const showTheme = function (t) {
+      themeBtn.dataset.theme = t;
+      themeBtn.title = 'Theme: ' + themeName[t] + ' (click for ' + themeName[nextTheme(t)] + ')';
+      themeBtn.setAttribute('aria-label', themeBtn.title);
+    };
+    showTheme(document.documentElement.style.colorScheme || 'system'); // the <head> script already applied the saved choice
+    themeBtn.addEventListener('click', function () {
+      const t = nextTheme(themeBtn.dataset.theme);
+      document.documentElement.style.colorScheme = t === 'system' ? '' : t;
+      showTheme(t); redrawMermaid();
+      try { localStorage.setItem('theme', t); } catch (e) {} // blocked storage: the choice lasts until reload
+    });
+    systemDark.addEventListener('change', redrawMermaid);
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+    el('searchKey').textContent = mac ? '\u2318K' : 'Ctrl K';
+    document.addEventListener('keydown', function (e) {
+      if (isSearchShortcut(e, mac)) { e.preventDefault(); el('search').focus(); el('search').select(); }
+    });
     el('search').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.target.value = ''; doSearch(''); } });
     el('search').addEventListener('click', function (e) { if (e.target.value) doSearch(e.target.value); }); // query still in the box → panel comes back
     document.addEventListener('click', function (e) { // any click outside box+panel dismisses the panel (text stays in the box)
@@ -672,8 +720,8 @@
       if (!b) return;
       const code = b.closest('pre').querySelector('code');
       copyText(code ? code.textContent : b.closest('pre').textContent, function () {
-        b.textContent = '\u2705'; // ✅
-        setTimeout(function () { b.textContent = '\uD83D\uDCCB'; }, 1500); // 📋
+        b.classList.add('copied');
+        setTimeout(function () { b.classList.remove('copied'); }, 1500);
       });
     });
     const tocScroll = function (e) {
@@ -710,13 +758,14 @@
 
     // resizable sidebar: drag the strip, width clamped 140–480 and remembered
     const setSidebarW = function (w) { document.documentElement.style.setProperty('--sidebar-w', w + 'px'); };
-    const savedW = parseInt(localStorage.getItem('sidebar-w'), 10);
+    let savedW = NaN;
+    try { savedW = parseInt(localStorage.getItem('sidebar-w'), 10); } catch (e) {} // blocked storage: default width
     if (savedW >= 140 && savedW <= 480) setSidebarW(savedW);
     el('resizer').addEventListener('pointerdown', function (e) {
       e.preventDefault();
       let w = 0;
       const move = function (ev) { w = Math.min(480, Math.max(140, ev.clientX)); setSidebarW(w); };
-      const up = function () { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); if (w) localStorage.setItem('sidebar-w', w); };
+      const up = function () { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); if (w) { try { localStorage.setItem('sidebar-w', w); } catch (e) {} } };
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
     });

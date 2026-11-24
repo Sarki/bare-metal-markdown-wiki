@@ -3,18 +3,60 @@
    Loaded after style.css, so anything here wins. The colors and sizes below
    are the app's CSS variables — override only what you want to change. */
 
-/* :root {
-   --bg: #fff;          --panel: #f6f8fa;      --border: #d0d7de;
-   --text: #1f2328;     --muted: #656d76;      --accent: #0969da;
-   --accent-soft: #ddf4ff;                     --code-bg: #f6f8fa;
-   --sidebar-w: 260px;  --topbar-h: 52px;
+/* Light or dark: the wiki follows the system setting, and each reader can
+   pick System, Light or Dark with the theme button (remembered in their
+   browser). To keep one mode for every reader, set it here — the theme
+   button then hides, and everything follows, code colors, badges and
+   diagrams included:
+
+ :root { color-scheme: light; }
+
+   Colors: each one is light-dark(light value, dark value). A plain color
+   applies in both modes; give both values to keep them apart:
+
+ :root {
+   --accent: #b00020;                       (both modes)
+   --accent: light-dark(#b00020, #ff8a9a);  (light, dark)
+ }
+
+   The defaults, as light-dark(light, dark):
+
+ :root {
+   --bg:            light-dark(#ffffff, #0f0f10);
+   --panel:         light-dark(#f6f6f7, #161618);
+   --field:         light-dark(#ffffff, #1c1c1f);
+   --hover:         light-dark(#ececee, #232327);
+   --border:        light-dark(#e2e2e5, #2a2a2f);
+   --border-strong: light-dark(#cfcfd4, #3b3b42);
+   --text:          light-dark(#111111, #ececee);
+   --muted:         light-dark(#5d5e66, #a1a1aa);
+   --accent:        light-dark(#1a4be0, #85a3ff);
+   --accent-hover:  light-dark(#1239b0, #adc0ff);
+   --accent-soft:   light-dark(#eaf0ff, rgba(133, 163, 255, 0.14));
+   --on-accent:     light-dark(#ffffff, #0f0f10);
+   --code-bg:       light-dark(#f6f6f7, #161618);
+   --mark:          light-dark(#ffef9e, rgba(255, 214, 10, 0.32));
+   --ok:            light-dark(#1a7f37, #56d364);
+   --warn:          light-dark(#9a6700, #e3b341);
+   --danger:        light-dark(#cf222e, #ff7b72);
+   --purple:        light-dark(#8250df, #bc8cff);
+ }
+
+   --ok, --warn, --danger, --accent and --purple also color the green,
+   yellow, red, blue and purple badges. Code colors are the --hl-*
+   variables at the top of style.css.
+
+   Sizes and shapes:
+
+ :root {
+   --sidebar-w: 268px;  --topbar-h: 60px;      --radius: 10px;
  } */
 
 /* examples:
  .page { line-height: 1.8; }
- #page h2 { border-bottom: 2px solid var(--accent); } */
+ #page h2 { border-bottom: 1px solid var(--border); } */
 
-/* logo image in the brand, instead of the 📚 glyph (set brandIcon: '' in
+/* logo image in the brand, instead of the built-in mark (set brandIcon: '' in
    config.js): drop logo.svg next to index.html, then
 
  .brand::before {
