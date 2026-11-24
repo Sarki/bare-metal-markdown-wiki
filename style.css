@@ -608,7 +608,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .tab-pane[hidden] { display: none; }
 
 /* Inline badges: @{ name } (vendor/mdit-extras.js). Known status words
-   get a color (see BADGE_COLORS in the vendor file); anything else stays
+   get a color (see DEFAULT_BADGE_COLORS in the vendor file); anything else stays
    the neutral gray pill. */
 .badge {
   display: inline-block;
