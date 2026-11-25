@@ -92,8 +92,8 @@ function makeApp(opts) {
   opts = opts || {};
   const els = {}; let html = ''; let editorEls = null;
   function mk() {
-    return { innerHTML: '', value: '', textContent: '', scrollTop: 0, readOnly: false, disabled: false, selectionStart: 0, selectionEnd: 0,
-      classList: { add() {}, remove() {}, toggle() {} }, focus() {}, setSelectionRange(a, b) { this.selectionStart = a; this.selectionEnd = b; } };
+    return { innerHTML: '', value: '', textContent: '', scrollTop: 0, readOnly: false, disabled: false, selectionStart: 0, selectionEnd: 0, scrolledTo: false,
+      classList: { add() {}, remove() {}, toggle() {} }, focus() {}, scrollIntoView() { this.scrolledTo = true; }, setSelectionRange(a, b) { this.selectionStart = a; this.selectionEnd = b; } };
   }
   const pageEl = mk();
   Object.defineProperty(pageEl, 'innerHTML', {
@@ -369,6 +369,7 @@ test('saving over their save on the same lines writes nothing and asks which sid
   check(bad, w.editor() && w.editor().value === 'mine', 'editor text lost');
   check(bad, /Someone else/.test(w.msg() || ''), 'message: ' + w.msg());
   check(bad, w.conflicts().includes('theirs') && w.conflicts().includes('data-side="mine"'), 'no choice offered: ' + w.conflicts());
+  check(bad, w.env.el('editConflicts').scrolledTo, 'the choices were left wherever they are, possibly far above the Save button the user just clicked');
   w.app.pickConflict(0, 'mine'); await w.app.saveEditor();
   check(bad, textOf(tree['Home.md']) === 'mine', 'after keeping mine, file on disk is ' + JSON.stringify(textOf(tree['Home.md'])));
   if (bad.length) throw new Error(bad.join('\n  '));

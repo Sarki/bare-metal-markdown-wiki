@@ -114,7 +114,8 @@ first to switch folders.
 
 - While you edit, the wiki checks every 5 seconds whether someone else saved
   the same page. If they did, a banner says so and offers **Merge their changes
-  into mine** and **Show what changed**. Nothing happens to your text until you
+  into mine** and **Show what changed**. The banner stays at the top of the
+  screen while you scroll, so you see it wherever on the page you are working. Nothing happens to your text until you
   click Merge. Chrome checks less often in background tabs, so in a tab you are
   not looking at the banner can be up to a minute late.
 - Merging works on whole lines, like `git merge`: edits on different lines are
@@ -125,7 +126,8 @@ first to switch folders.
   both**. The text box is read-only until every clash is decided. A paragraph is often
   one line in Markdown, so two edits to the same paragraph usually clash.
 - **Save** merges the same way if someone saved since your last merge. If the
-  edits clash, nothing is written and you choose as above, then save again.
+  edits clash, nothing is written, the page scrolls up to the clashes, and you
+  choose as above, then save again.
 - Two saves landing at nearly the same moment can still overwrite one another:
   there is no real locking without a server, and on a slow drive the
   unprotected moment lasts as long as the write itself.

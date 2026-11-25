@@ -794,6 +794,7 @@
     ed.conflict = { parts: parts, version: theirs, choices: {} };
     draftReadOnly(ed, true); el('editSave').disabled = true;
     showConflicts(ed);
+    el('editConflicts').scrollIntoView({ block: 'start' });
   }
   function putMerged(ed, parts, theirs) {
     const cm = ed.cm && ed.cm.codemirror, box = el('editText');
