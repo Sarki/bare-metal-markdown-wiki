@@ -11,7 +11,8 @@
    tocSide     : where the table of contents is shown — 'left' (sidebar) or 'right' (rail)
    tocLevels   : heading levels shown in the TOC (H1..Hn) — 1 to 6
    pageWidth   : article column width, percent of the reading area — 10 to 100
-   foldersOpen : start with the sidebar folders expanded (false = all collapsed)
+   foldersOpen   : start with the sidebar folders expanded (false = all collapsed)
+   editButton  : show the Edit button in live-render mode (false = read-only wiki)
    imageExts   : extensions read as images in live-render mode (bundled mode needs no list, the browser paints any format)
    brandIcon   : icon before the wiki name in the topbar — left out = built-in logo; any emoji/character replaces it; '' hides it
    favicon     : tab icon — image file next to index.html, URL, or data: URI; '' = the built-in logo
@@ -28,6 +29,7 @@ window.WIKI = {
   tocLevels: 3, // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70, // article column width as % of the reading area; 10–100
   foldersOpen: false,
+  editButton: true, // false hides the Edit button: live render reads the folder, but nobody edits it from this wiki
   landingPage: 'Home', // page opened on load; '' shows the generated home (recent + folders)
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' (folders then pages) | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // live-render mode only; add e.g. 'bmp' or 'avif' if your browser supports it

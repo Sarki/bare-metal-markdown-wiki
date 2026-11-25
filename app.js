@@ -51,6 +51,7 @@
   let liveStamp = '';
   let editing = null;
   let buildReminder = null;    // the folder whose pending-build note this tab has already shown
+  let treeOpen = null;         // folders the user opened/closed by hand (path -> bool); survives every sidebar redraw
   let shownPage = '';
   let loading = null;
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
@@ -59,6 +60,7 @@
   function intSetting(v, lo, hi, def) { return Math.min(hi, Math.max(lo, parseInt(v, 10) || def)); }
   const tocLevels = intSetting(WIKI.tocLevels, 1, 6, 3); // TOC heading depth, 1–6
   const foldersOpen = WIKI.foldersOpen === true; // start with the sidebar folders expanded
+  const editButton = WIKI.editButton !== false; // false hides the live-render Edit button: live folder, read-only wiki
   const landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
   const sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
   document.documentElement.style.setProperty('--page-w', intSetting(WIKI.pageWidth, 10, 100, 70) + '%'); // article width cap, 10–100%
@@ -341,7 +343,7 @@
     }
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
-    if (mode === 'live') { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
+    if (mode === 'live' && editButton) { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
       page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button>');
       page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
     }
@@ -394,11 +396,12 @@
       parts.forEach(function (part) { node.subs[part] = node.subs[part] || { pages: [], subs: {} }; node = node.subs[part]; });
       node.pages.push(s);
     });
-    // a folder is open when it contains the page on screen (or the landing page),
-    // otherwise per the foldersOpen setting
+    // a folder keeps whatever the user last set by hand; else it is open when it contains the
+    // page on screen (or the landing page), otherwise per the foldersOpen setting
     const shown = shownPage || (landingPage && PAGES[landingPage] ? landingPage : '');
     const activeFolder = PAGES[shown] ? (PAGES[shown].folder || '') : '';
     const isOpen = function (p) {
+      if (treeOpen && p in treeOpen) return treeOpen[p];
       return activeFolder ? (activeFolder === p || activeFolder.indexOf(p + '/') === 0) : foldersOpen;
     };
     const linkHtml = function (s) {
@@ -415,7 +418,7 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
@@ -487,6 +490,7 @@
     e.textContent = m === 'live' ? ('live · ' + (liveHandle ? liveHandle.name : 'folder')) : 'bundled · data.js';
     e.className = 'mode' + (m === 'live' ? ' live' : '');
     el('refresh').classList.toggle('hidden', m !== 'live');
+    el('leave').classList.toggle('hidden', m !== 'live');
   }
 
   // ---------- routing ----------
@@ -635,6 +639,7 @@
       r.readAsDataURL(f.slice(0, f.size, mime));
     });
   }
+  const dirKey = 'dir ' + location.pathname.replace(/[^/]*$/, ''); // file:// gives every local page one shared IndexedDB, so the one 'dir' slot used to make every wiki live-render the last folder picked; keying by this index.html's own folder keeps each wiki to its own
   const IDB = {
     db: null,
     open() {
@@ -647,7 +652,8 @@
       });
     },
     async get(k) { const d = await this.open(); return new Promise(function (res) { const g = d.transaction('kv').objectStore('kv').get(k); g.onsuccess = function () { res(g.result); }; }); },
-    async set(k, v) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); }
+    async set(k, v) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); },
+    async del(k) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); }
   };
   async function showFolder(h) {
     const mine = loading = { h: h };
@@ -655,6 +661,7 @@
       if ((await h.queryPermission({ mode: 'read' })) !== 'granted') return false;
       const live = await loadLive(h);
       if (loading !== mine || editing) return false;
+      if (h === liveHandle && live.stamp === liveStamp) return true; // nothing changed: no redraw, so a folder you are browsing survives focus refreshes and live polls
       const scroll = h === liveHandle ? el('content').scrollTop : 0;
       liveHandle = h; applyLive(live); mode = 'live';
       buildIndex(); renderTags(); setMode('live'); showPage(shownPage);
@@ -668,8 +675,16 @@
       const h = await showDirectoryPicker({ mode: 'readwrite' });
       if (!(await showFolder(h))) return;
       closeNav();
-      await IDB.set('dir', h);
+      await IDB.set(dirKey, h);
     } catch (e) { /* cancelled or permission denied */ }
+  }
+  function leaveLive() { // the way back out: bundled snapshot now, and this wiki forgets the folder so the next open does not quietly live-render it again
+    if (editing || mode !== 'live') return;
+    liveHandle = null; liveStamp = ''; mode = 'bundled';
+    IDB.del(dirKey).catch(function () {}); // best effort: if IDB is broken, the cost is just the folder reopening next time
+    loadBundled();
+    buildIndex(); renderTags(); renderSidebar(); setMode('bundled');
+    route(); // the live page on screen may not exist in the snapshot
   }
   function refreshLive() {
     if (mode !== 'live' || editing || (loading && loading.h !== liveHandle)) return false;
@@ -959,10 +974,15 @@
     });
 
     try {
-      const h = await IDB.get('dir');
+      const h = await IDB.get(dirKey);
       if (h) { const perm = await h.queryPermission({ mode: 'read' }); if (perm === 'granted') { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; } }
     } catch (e) {}
     el('choose').addEventListener('click', chooseFolder);
+    el('leave').addEventListener('click', leaveLive);
+    el('tree').addEventListener('toggle', function (e) { // capture phase: the toggle event does not bubble. remembers hand-opened folders across redraws
+      const p = e.target.getAttribute('data-path');
+      if (p) { treeOpen = treeOpen || {}; treeOpen[p] = e.target.open; }
+    }, true);
     if (mode !== 'live') loadBundled();
 
     buildIndex();

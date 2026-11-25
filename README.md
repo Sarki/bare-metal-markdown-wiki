@@ -81,10 +81,18 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
   [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API) —
   Chrome/Edge)
 - Pick your Markdown folder **once**; the choice is remembered (IndexedDB) and
-  reused on every later open
+  reused on every later open. It is remembered **per wiki copy** — the memory
+  is keyed by where that `index.html` sits, so two wikis on one machine never
+  end up live-rendering each other's folder (under `file://` the whole
+  computer shares one IndexedDB)
+- The **Bundled** button (shown in live mode) leaves live render and forgets
+  the folder; **Live render** picks one again when you want it back
 - The folder is **checked for changes every 5 seconds** and re-read when the
   tab regains focus, plus a **↻** button for manual refresh — a serverless
   `file://` page has no real file watcher
+- A reload only redraws the page when something actually changed, and folders
+  you open or close in the sidebar stay as you left them — mid-browse, the
+  background reload never slams your open folders shut
 
 Browsers cannot let a `file://` page read sibling folders without a one-time
 user grant; that is the one unavoidable click. In Firefox/Safari the button
@@ -95,7 +103,9 @@ is hidden and the bundled snapshot is used instead.
 In live render mode every page has an **Edit** button. It opens the page's
 Markdown in a text box; **Save** writes the `.md` file straight back to the
 folder, **Cancel** throws the changes away. The browser may ask for
-permission to write to the folder.
+permission to write to the folder. Set `editButton: false` in `config.js` to
+hide the button: the wiki still reads the live folder, it just cannot be
+edited from this copy.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
@@ -103,7 +113,8 @@ and a small toolbar covers bold, italic, heading, link, quote, code, lists,
 table and undo/redo. Its buttons show words instead of icons because the wiki
 ships no icon font, and there is no preview button — EasyMDE's own preview uses
 a different Markdown engine, so `[[links]]` and `:::` boxes would come out
-wrong there. Nothing is fetched from the internet.
+wrong there. Nothing is fetched from the internet. The **Save** and **Cancel**
+buttons stay pinned to the bottom of the window while you scroll a long file.
 
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and
@@ -170,6 +181,7 @@ window.WIKI = {
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70,     // article column width as % of the reading area; 10–100 (full width at 760px and below)
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
+  editButton: true,  // false hides the Edit button: live render reads the folder but never edits it
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format

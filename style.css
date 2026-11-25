@@ -453,7 +453,7 @@ img { max-width: 100%; border-radius: 6px; }
 
 /* ── 4. Article content ──────────────────────────────────── */
 
-.content { padding: 28px 32px 80px; overflow: auto; }
+.content { --padb: 80px; padding: 28px 32px var(--padb); overflow: auto; }
 .main-col { min-width: 0; }
 .page { max-width: var(--page-w, 860px); margin: 0 auto; } /* width set from the pageWidth setting */
 
@@ -760,7 +760,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
     z-index: 25;
     background: rgba(0, 0, 0, 0.35);
   }
-  .content { padding: 20px 16px 48px; }
+  .content { --padb: 48px; padding: 20px 16px var(--padb); }
   .page { max-width: none; }
   .content.toc-right { grid-template-columns: 1fr; }
   .toc-rail { display: none; }
@@ -780,7 +780,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   .topbar, .sidebar, .resizer, .toc-rail, .backlinks, .search-results,
   .copybtn, .breadcrumbs, .edit-note { display: none !important; }
   .layout { display: block; flex: none; min-height: 0; }
-  .content, .content.toc-right { display: block; overflow: visible; padding: 0; }
+  .content, .content.toc-right { display: block; overflow: visible; padding: 0; --padb: 0px; }
   pre { overflow: visible; white-space: pre-wrap; border: none; }
   a { color: inherit; }
 }
@@ -800,7 +800,10 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 .editor > textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.editor-bar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+/* sticky: while editing a long file the Save/Cancel row follows you down the .content scroller,
+   then settles at the editor's end; the background keeps text from sliding under the buttons.
+   Chrome insets a sticky bottom by the scroller's padding-bottom, so --padb is added back */
+.editor-bar { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 6px 0; position: sticky; bottom: calc(0px - var(--padb, 0px)); z-index: 2; background: var(--bg); }
 .edit-msg { font-size: 13px; color: var(--muted); }
 .edit-alert, .edit-conflicts { margin-bottom: 12px; padding: 12px 14px; font-size: 13px; border: 1px solid var(--warn); border-radius: var(--radius); }
 .edit-alert:empty, .edit-conflicts:empty { display: none; }
