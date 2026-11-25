@@ -95,7 +95,9 @@ is hidden and the bundled snapshot is used instead.
 In live render mode every page has an **Edit** button. It opens the page's
 Markdown in a text box; **Save** writes the `.md` file straight back to the
 folder, **Cancel** throws the changes away. The browser may ask for
-permission to write to the folder.
+permission to write to the folder. Set `editButton: false` in `config.js` to
+hide the button: the wiki still reads the live folder, it just cannot be
+edited from this copy.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
@@ -159,6 +161,7 @@ window.WIKI = {
   tocLevels: 3,      // heading levels shown in the TOC (H1..Hn); 1–6
   pageWidth: 70,     // article column width as % of the reading area; 10–100 (full width at 760px and below)
   foldersOpen: false, // start with the sidebar folders expanded (false = all collapsed)
+  editButton: true,  // false hides the Edit button: live render reads the folder but never edits it
   landingPage: 'Home', // page opened on load (a slug like 'Guides/Basics'); '' = generated home
   sidebarOrder: 'files', // 'files' (pages then folders) | 'folders' | 'alpha' (mixed alphabetical)
   imageExts: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'], // images read in live-render mode; bundled mode needs no list — the browser paints any format

@@ -288,5 +288,7 @@ Edit the `.md` files under `articles/` instead; the file's modification
 time is what drives the "recent edits" list on the home page. Editing with
 **Live render** writes those same files from the browser — when you are done,
 run the build once and wikis opened without live render pick the new text up.
+To give readers the live files without an Edit button, set `editButton: false`
+in `config.js`.
 
 Back to [[Home]], or revisit [[Basics]] and [[Formatting]].

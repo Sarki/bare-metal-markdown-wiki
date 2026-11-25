@@ -59,6 +59,7 @@
   function intSetting(v, lo, hi, def) { return Math.min(hi, Math.max(lo, parseInt(v, 10) || def)); }
   const tocLevels = intSetting(WIKI.tocLevels, 1, 6, 3); // TOC heading depth, 1–6
   const foldersOpen = WIKI.foldersOpen === true; // start with the sidebar folders expanded
+  const editButton = WIKI.editButton !== false; // false hides the live-render Edit button: live folder, read-only wiki
   const landingPage = typeof WIKI.landingPage === 'string' ? WIKI.landingPage : ''; // page opened at empty hash; '' = generated home
   const sidebarOrder = (WIKI.sidebarOrder === 'folders' || WIKI.sidebarOrder === 'alpha') ? WIKI.sidebarOrder : 'files'; // 'folders' | 'files' | 'alpha'
   document.documentElement.style.setProperty('--page-w', intSetting(WIKI.pageWidth, 10, 100, 70) + '%'); // article width cap, 10–100%
@@ -341,7 +342,7 @@
     }
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
-    if (mode === 'live') { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
+    if (mode === 'live' && editButton) { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
       page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button>');
       page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
     }
