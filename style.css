@@ -835,7 +835,31 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .edit-note:empty { display: none; }
 .edit-note:not(:empty):not(.edit-note--info)::before { content: "\26a0 "; }
 /* the post-save build reminder is information, not a warning: accent colour, no triangle */
-.edit-note--info { color: var(--accent); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+
+/* centered overlay for a successful save; it floats over the page and fades by itself */
+#toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -45%) scale(0.97);
+  max-width: min(480px, calc(100vw - 48px));
+  padding: 13px 20px;
+  background: var(--field);
+  border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ok);
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+  z-index: 40;
+}
+#toast.toast--on { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+@media print { #toast { display: none; } }
 
 /* ── the EasyMDE edit box (vendor/easymde.min.css + .js) ───────────────────
    EasyMDE replaces the textarea above with CodeMirror. "> textarea" in the rule

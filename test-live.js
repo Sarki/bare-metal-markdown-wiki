@@ -3,7 +3,7 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
   'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
@@ -12,7 +12,8 @@ const factory = (0, eval)(`(function (env) {
   const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
   const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
   function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', buildReminder = null;
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', buildReminder = null, toastTimer = null;
+  const setTimeout = function () { return 0; }, clearTimeout = function () {}; // the toast's 2.5s auto-hide must not keep the test process awake
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
   function setMode(m) { env.label = m === 'live' ? liveHandle.name : 'bundled'; }
@@ -114,6 +115,7 @@ function makeApp(opts) {
     screen() { return html; },
     editor() { return env.el('editText'); },
     msg() { const m = env.el('editMsg'); return m ? m.textContent : null; },
+    toastMsg() { const t = els.toast; return t ? t.textContent : null; },
     alert() { const a = env.el('editAlert'); return a ? a.innerHTML : null; },
     conflicts() { const c = env.el('editConflicts'); return c ? c.innerHTML : null; },
     go(hash) { env.location.hash = hash; app.route(); }
@@ -131,7 +133,8 @@ test('baseline: an edit is saved and the saved text is shown', async function ()
   const bad = [];
   check(bad, textOf(tree['Home.md']) === 'v2', 'file on disk is ' + JSON.stringify(textOf(tree['Home.md'])));
   check(bad, w.screen().includes('| v2'), 'screen: ' + w.screen());
-  check(bad, /build/.test(w.env.el('editNote').textContent || ''), 'no build reminder after the save: ' + JSON.stringify(w.env.el('editNote').textContent));
+  check(bad, /^Saved\./.test(w.toastMsg() || ''), 'no centered overlay after Save: ' + JSON.stringify(w.toastMsg()));
+  check(bad, /build/.test(w.toastMsg() || ''), 'no build reminder in the overlay: ' + JSON.stringify(w.toastMsg()));
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 
@@ -140,9 +143,9 @@ test('the build reminder shows after the first save of a folder, not after every
   const w = makeApp({ hash: '#A' }); await w.app.start(f.root);
   const bad = [];
   await w.app.openEditor(); w.editor().value = 'a2'; await w.app.saveEditor();
-  check(bad, /build/.test(w.env.el('editNote').textContent || ''), 'no reminder after the first save');
+  check(bad, /build/.test(w.toastMsg() || ''), 'no reminder in the overlay after the first save: ' + JSON.stringify(w.toastMsg()));
   w.go('#B'); await w.app.openEditor(); w.editor().value = 'b2'; await w.app.saveEditor();
-  check(bad, w.env.el('editNote').textContent === '', 'the reminder nagged again on the next save: ' + JSON.stringify(w.env.el('editNote').textContent));
+  check(bad, w.toastMsg() === 'Saved.', 'the reminder nagged again on the next save: ' + JSON.stringify(w.toastMsg()));
   check(bad, textOf(tree['A.md']) === 'a2' && textOf(tree['B.md']) === 'b2', 'disk: A=' + textOf(tree['A.md']) + ' B=' + textOf(tree['B.md']));
   if (bad.length) throw new Error(bad.join('\n  '));
 });

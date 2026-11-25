@@ -707,6 +707,15 @@
   }
 
   function editMsg(text) { const m = el('editMsg'); if (m) m.textContent = text; }
+
+  let toastTimer = null;
+  function toast(text) { // centered overlay for the good-news messages; warnings stay inline by the editor
+    let t = el('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.textContent = text; t.classList.add('toast--on');
+    clearTimeout(toastTimer); // the long build reminder needs more time to read than a plain "Saved."
+    toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, text.length > 60 ? 6000 : 2500);
+  }
   // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
   // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
   // autoDownloadFontAwesome stops it pulling Font Awesome off a CDN — the wiki has to work offline.
@@ -773,12 +782,14 @@
       return;
     }
     renderTags(); showPage(shownPage);
+    // the confirmation lands in a centered overlay over the re-rendered page
     // remind once per folder per tab, not after every save: one build covers them all, and a second
     // reminder on the next page would be noise (a reload clears it, so a new session gets one again)
     if (buildReminder !== ed.root) {
       buildReminder = ed.root;
-      const n = el('editNote'); // the page re-rendered with a fresh notice slot: use it for the build reminder
-      if (n) { n.classList.add('edit-note--info'); n.textContent = 'Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.'; }
+      toast('Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.');
+    } else {
+      toast('Saved.');
     }
   }
   async function checkEditedPage() {
