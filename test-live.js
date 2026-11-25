@@ -8,7 +8,7 @@ const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', '
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
-  const showDirectoryPicker = function () { return env.pick(); };
+  const showDirectoryPicker = function (o) { env.pickOpts = o; return env.pick(); };
   const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
   const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
   function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
@@ -545,6 +545,8 @@ test('a folder switch that fails to load does not redirect saves to the new fold
   w.env.pick = async function () { return b.root; };
   await w.app.chooseFolder();
   const bad = [];
+  const id = (w.env.pickOpts || {}).id || '';
+  check(bad, /^w[0-9a-z]{1,31}$/.test(id), 'picker id must be a short token (Chrome caps ids at 32 chars): ' + JSON.stringify(id));
   check(bad, w.env.label === w.app.handle, 'topbar says folder ' + w.env.label + ' and shows ' + JSON.stringify(w.screen()) + ', but edits go to folder ' + w.app.handle);
   await w.app.openEditor();
   if (w.editor()) { w.editor().value = 'edited'; await w.app.saveEditor(); }

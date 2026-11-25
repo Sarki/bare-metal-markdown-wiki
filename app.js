@@ -677,7 +677,11 @@
   async function chooseFolder() {
     if (editing) return;
     try {
-      const h = await showDirectoryPicker({ mode: 'readwrite' });
+      // Chrome only accepts short token-ish ids (≤32 chars), so hash this wiki's folder key rather
+      // than slug it: the id makes the dialog reopen where this wiki last picked (a picker can't be
+      // given a path directly) and stays distinct per wiki
+      let hid = 7; for (const ch of dirKey) hid = (Math.imul(hid, 31) + ch.charCodeAt(0)) >>> 0;
+      const h = await showDirectoryPicker({ mode: 'readwrite', id: 'w' + hid.toString(36) });
       if (!(await showFolder(h))) return;
       closeNav();
       await IDB.set(dirKey, h);

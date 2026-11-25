@@ -81,7 +81,10 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
   [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API) —
   Chrome/Edge — and hidden while live render is already on)
 - Pick your Markdown folder **once**; the choice is remembered (IndexedDB) and
-  reused on every later open. It is remembered **per wiki copy** — the memory
+  reused on every later open. When the picker does open it starts in the folder
+  you last picked — a web page cannot preselect an arbitrary path (and the wiki
+  itself can't hand the dialog its own folder), this is the closest it gets.
+  It is remembered **per wiki copy** — the memory
   is keyed by where that `index.html` sits, so two wikis on one machine never
   end up live-rendering each other's folder (under `file://` the whole
   computer shares one IndexedDB)
