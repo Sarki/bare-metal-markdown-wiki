@@ -51,6 +51,7 @@
   let liveStamp = '';
   let editing = null;
   let buildReminder = null;    // the folder whose pending-build note this tab has already shown
+  let treeOpen = null;         // folders the user opened/closed by hand (path -> bool); survives every sidebar redraw
   let shownPage = '';
   let loading = null;
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
@@ -395,11 +396,12 @@
       parts.forEach(function (part) { node.subs[part] = node.subs[part] || { pages: [], subs: {} }; node = node.subs[part]; });
       node.pages.push(s);
     });
-    // a folder is open when it contains the page on screen (or the landing page),
-    // otherwise per the foldersOpen setting
+    // a folder keeps whatever the user last set by hand; else it is open when it contains the
+    // page on screen (or the landing page), otherwise per the foldersOpen setting
     const shown = shownPage || (landingPage && PAGES[landingPage] ? landingPage : '');
     const activeFolder = PAGES[shown] ? (PAGES[shown].folder || '') : '';
     const isOpen = function (p) {
+      if (treeOpen && p in treeOpen) return treeOpen[p];
       return activeFolder ? (activeFolder === p || activeFolder.indexOf(p + '/') === 0) : foldersOpen;
     };
     const linkHtml = function (s) {
@@ -416,7 +418,7 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
@@ -606,6 +608,7 @@
       if ((await h.queryPermission({ mode: 'read' })) !== 'granted') return false;
       const live = await loadLive(h);
       if (loading !== mine || editing) return false;
+      if (h === liveHandle && live.stamp === liveStamp) return true; // nothing changed: no redraw, so a folder you are browsing survives focus refreshes and live polls
       const scroll = h === liveHandle ? el('content').scrollTop : 0;
       liveHandle = h; applyLive(live); mode = 'live';
       buildIndex(); renderTags(); setMode('live'); showPage(shownPage);
@@ -864,6 +867,10 @@
     } catch (e) {}
     el('choose').addEventListener('click', chooseFolder);
     el('leave').addEventListener('click', leaveLive);
+    el('tree').addEventListener('toggle', function (e) { // capture phase: the toggle event does not bubble. remembers hand-opened folders across redraws
+      const p = e.target.getAttribute('data-path');
+      if (p) { treeOpen = treeOpen || {}; treeOpen[p] = e.target.open; }
+    }, true);
     if (mode !== 'live') loadBundled();
 
     buildIndex();

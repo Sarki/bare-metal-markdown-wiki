@@ -90,6 +90,9 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
 - The folder is **checked for changes every 5 seconds** and re-read when the
   tab regains focus, plus a **↻** button for manual refresh — a serverless
   `file://` page has no real file watcher
+- A reload only redraws the page when something actually changed, and folders
+  you open or close in the sidebar stay as you left them — mid-browse, the
+  background reload never slams your open folders shut
 
 Browsers cannot let a `file://` page read sibling folders without a one-time
 user grant; that is the one unavoidable click. In Firefox/Safari the button
@@ -110,7 +113,8 @@ and a small toolbar covers bold, italic, heading, link, quote, code, lists,
 table and undo/redo. Its buttons show words instead of icons because the wiki
 ships no icon font, and there is no preview button — EasyMDE's own preview uses
 a different Markdown engine, so `[[links]]` and `:::` boxes would come out
-wrong there. Nothing is fetched from the internet.
+wrong there. Nothing is fetched from the internet. The **Save** and **Cancel**
+buttons stay pinned to the bottom of the window while you scroll a long file.
 
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and

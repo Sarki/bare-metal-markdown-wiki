@@ -21,6 +21,7 @@ const factory = (0, eval)(`(function (env) {
   async function fileToDataURI(f) { return 'data:' + await f.text(); }
   function renderPage(slug) {
     const p = PAGES[slug];
+    env.pageRenders = (env.pageRenders || 0) + 1; // how often a refresh actually rebuilt the article
     el('page').innerHTML = p ? 'PAGE ' + slug + ' | title=' + p.title + ' | tags=' + p.tags.join(',') + ' | ' + p.content : 'NOTFOUND ' + slug;
     el('editNote').textContent = ''; // the real renderPage rebuilds that slot empty every render
   }
@@ -138,6 +139,19 @@ test('the build reminder shows after the first save of a folder, not after every
   check(bad, w.env.el('editNote').textContent === '', 'the reminder nagged again on the next save: ' + JSON.stringify(w.env.el('editNote').textContent));
   check(bad, textOf(tree['A.md']) === 'a2' && textOf(tree['B.md']) === 'b2', 'disk: A=' + textOf(tree['A.md']) + ' B=' + textOf(tree['B.md']));
   if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('a refresh that finds no change leaves the screen alone, so browsing the tree survives it', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  const before = w.env.pageRenders || 0;
+  await w.app.forceRefresh(); await w.app.pollLive();
+  check(bad, (w.env.pageRenders || 0) === before, 'a no-change refresh redrew the page ' + ((w.env.pageRenders || 0) - before) + 'x: that is what slams the sidebar tree shut mid-browse');
+  tree['Home.md'] = page('v2');
+  await w.app.forceRefresh();
+  check(bad, (w.env.pageRenders || 0) > before && w.screen().includes('v2'), 'a real change was skipped: renders ' + w.env.pageRenders + ', screen ' + w.screen());
+  return bad;
 });
 
 test('baseline: a poll shows a change made by someone else', async function () {
@@ -802,7 +816,7 @@ t('the refresh button pressed during a poll\'s stamp check reloads, and the over
   const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
   const g = holdFirstWalk(f);
   const p = w.app.pollLive(); await settle();
-  tree['Home.md'].bytes = Buffer.from('their v2');
+  tree['Home.md'] = page('their v2'); // new bytes AND a new mtime, as a real edit has
   const ok = await w.app.forceRefresh();
   const bad = [];
   check(bad, ok === true && w.screen().includes('their v2'), 'refresh returned ' + ok + ', screen: ' + w.screen());
@@ -920,18 +934,27 @@ t('a save of A/Home that lands after a switch to B does not put A\'s text into B
   return bad;
 });
 
-function sidebarHtml(shown, hash) {
+function sidebarHtml(shown, hash, treeOpen) {
   const tree = { innerHTML: '' };
   const fn = grab('taggedSlugs') + grab('renderSidebar');
-  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
-  f(tree, { hash: hash }, shown);
+  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; let treeOpen = arguments[3]; function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
+  f(tree, { hash: hash }, shown, treeOpen || null);
   return tree.innerHTML;
 }
 t('a redraw after a footnote click keeps the shown page\'s folder open in the sidebar', async function () {
   const before = sidebarHtml('guides/setup', '#guides%2Fsetup'); const after = sidebarHtml('guides/setup', '#fn-1');
   const bad = [];
-  check(bad, /<details class="grp" open>/.test(before), 'baseline sidebar: ' + before);
-  check(bad, /<details class="grp" open>/.test(after), 'with #fn-1 in the address bar: ' + after);
+  check(bad, /<details class="grp" data-path="guides" open>/.test(before), 'baseline sidebar: ' + before);
+  check(bad, /<details class="grp" data-path="guides" open>/.test(after), 'with #fn-1 in the address bar: ' + after);
+  return bad;
+});
+
+t('folders opened or closed by hand survive every sidebar redraw', async function () {
+  const bad = [];
+  const closed = sidebarHtml('guides/setup', '#guides%2Fsetup', { guides: false }); // the chain rule would open it
+  check(bad, closed.includes('data-path="guides"') && !/data-path="guides" open/.test(closed), 'a hand-closed folder reopened: ' + closed);
+  const opened = sidebarHtml('Home', '#Home', { guides: true }); // guides holds no shown page: normally collapsed
+  check(bad, /<details class="grp" data-path="guides" open>/.test(opened), 'a hand-opened folder collapsed again: ' + opened);
   return bad;
 });
 
