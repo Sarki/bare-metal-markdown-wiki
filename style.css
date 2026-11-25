@@ -345,16 +345,16 @@ img { max-width: 100%; border-radius: 6px; }
 #page a.btn { background: var(--accent); border-color: var(--accent); color: var(--on-accent); text-decoration: none; }
 #page a.btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 /* @[x](u){color} — text stays white, so the fills are the badge colors darkened where needed */
-#page a.btn--green  { background: #1a7f37; border-color: #1a7f37; color: #fff; }
-#page a.btn--green:hover { background: #136729; border-color: #136729; }
-#page a.btn--yellow { background: #9a6700; border-color: #9a6700; color: #fff; }
-#page a.btn--yellow:hover { background: #7c5300; border-color: #7c5300; }
-#page a.btn--red    { background: #cf222e; border-color: #cf222e; color: #fff; }
-#page a.btn--red:hover { background: #a0111d; border-color: #a0111d; }
-#page a.btn--blue   { background: #1a4be0; border-color: #1a4be0; color: #fff; }
-#page a.btn--blue:hover { background: #1239b0; border-color: #1239b0; }
-#page a.btn--purple { background: #8250df; border-color: #8250df; color: #fff; }
-#page a.btn--purple:hover { background: #6639ba; border-color: #6639ba; }
+#page .btn--green  { background: #1a7f37; border-color: #1a7f37; color: #fff; }
+#page .btn--green:hover { background: #136729; border-color: #136729; }
+#page .btn--yellow { background: #9a6700; border-color: #9a6700; color: #fff; }
+#page .btn--yellow:hover { background: #7c5300; border-color: #7c5300; }
+#page .btn--red    { background: #cf222e; border-color: #cf222e; color: #fff; }
+#page .btn--red:hover { background: #a0111d; border-color: #a0111d; }
+#page .btn--blue   { background: #1a4be0; border-color: #1a4be0; color: #fff; }
+#page .btn--blue:hover { background: #1239b0; border-color: #1239b0; }
+#page .btn--purple { background: #8250df; border-color: #8250df; color: #fff; }
+#page .btn--purple:hover { background: #6639ba; border-color: #6639ba; }
 
 /* hamburger: hidden everywhere except the narrow-screen block, where the
    sidebar turns into an overlay drawer it toggles */
@@ -453,12 +453,12 @@ img { max-width: 100%; border-radius: 6px; }
 
 /* ── 4. Article content ──────────────────────────────────── */
 
-.content { --padb: 80px; padding: 28px 32px var(--padb); overflow: auto; }
+.content { --padt: 28px; --padb: 80px; padding: var(--padt) 32px var(--padb); overflow: auto; }
 .main-col { min-width: 0; }
 .page { max-width: var(--page-w, 860px); margin: 0 auto; } /* width set from the pageWidth setting */
 
 /* file path above the rendered page, e.g. articles › Guides › Basics.md */
-.breadcrumbs { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 14px; min-height: 28px; line-height: 28px; }
+.breadcrumbs { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0 0 14px; min-height: 28px; line-height: 28px; position: sticky; top: calc(0px - var(--padt, 0px)); z-index: 1; background: var(--bg); } /* sticky: the breadcrumb line, carrying the Edit button, stays at the window top while scrolling a long article; --padt added back, see .editor-bar */
 .breadcrumbs a { color: var(--muted); }
 .breadcrumbs a:hover { color: var(--accent); }
 .crumb-sep { margin: 0 8px; opacity: 0.5; }
@@ -760,7 +760,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
     z-index: 25;
     background: rgba(0, 0, 0, 0.35);
   }
-  .content { --padb: 48px; padding: 20px 16px var(--padb); }
+  .content { --padt: 20px; --padb: 48px; padding: var(--padt) 16px var(--padb); }
   .page { max-width: none; }
   .content.toc-right { grid-template-columns: 1fr; }
   .toc-rail { display: none; }
@@ -807,7 +807,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .edit-msg { font-size: 13px; color: var(--muted); }
 .edit-alert, .edit-conflicts { margin-bottom: 12px; padding: 12px 14px; font-size: 13px; border: 1px solid var(--warn); border-radius: var(--radius); }
 .edit-alert:empty, .edit-conflicts:empty { display: none; }
-.edit-alert { position: sticky; top: 0; z-index: 10; background: var(--bg); box-shadow: var(--shadow); }
+.edit-alert { position: sticky; top: calc(0px - var(--padt, 0px)); z-index: 10; background: var(--bg); box-shadow: var(--shadow); }
 .edit-alert .btn, .conflict-bar .btn { height: 28px; padding: 0 12px; font-size: 12.5px; text-transform: none; letter-spacing: normal; }
 .edit-alert pre, .conflict pre { margin: 8px 0 0; padding: 8px 10px; max-height: 40vh; overflow: auto; font: 12.5px/1.5 var(--mono); background: var(--code-bg); border-radius: 6px; white-space: pre-wrap; }
 .edit-conflicts > p { margin: 0 0 8px; }

@@ -344,7 +344,7 @@
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
     if (mode === 'live' && editButton) { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
-      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button>');
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn btn--blue" type="button" data-edit="open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 13.5l.6-2.8 8-8 2.2 2.2-8 8zM10.6 3.2l2.2 2.2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Edit</button>');
       page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
     }
     fixMdLinks(page, p.folder);
@@ -739,8 +739,8 @@
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><div id="editAlert" class="edit-alert"></div><div id="editConflicts" class="edit-conflicts"></div>' +
         '<textarea id="editText" spellcheck="false"></textarea>' +
-        '<div class="editor-bar"><button id="editSave" class="btn" type="button" data-edit="save">Save</button>' +
-        '<button id="editCancel" class="btn" type="button" data-edit="cancel">Cancel</button><span id="editMsg" class="edit-msg"></span></div></div>';
+        '<div class="editor-bar"><button id="editSave" class="btn btn--green" type="button" data-edit="save"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3h8l2.5 2.5V13H3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M5.5 3v3.5h5V3M5.5 13V9.5h5V13" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Save</button>' +
+        '<button id="editCancel" class="btn btn--red" type="button" data-edit="cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Cancel</button><span id="editMsg" class="edit-msg"></span></div></div>';
       const ta = el('editText');
       ta.value = opened.text;
       editing.cm = makeEditor(ta);

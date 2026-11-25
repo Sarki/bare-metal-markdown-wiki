@@ -114,7 +114,8 @@ table and undo/redo. Its buttons show words instead of icons because the wiki
 ships no icon font, and there is no preview button — EasyMDE's own preview uses
 a different Markdown engine, so `[[links]]` and `:::` boxes would come out
 wrong there. Nothing is fetched from the internet. The **Save** and **Cancel**
-buttons stay pinned to the bottom of the window while you scroll a long file.
+buttons stay pinned to the bottom of the window while you scroll a long file,
+and the breadcrumb line carrying **Edit** stays pinned at the top.
 
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and
