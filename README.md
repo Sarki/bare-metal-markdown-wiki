@@ -115,12 +115,14 @@ first to switch folders.
 - While you edit, the wiki checks every 5 seconds whether someone else saved
   the same page. If they did, a banner says so and offers **Merge their changes
   into mine** and **Show what changed**. The banner stays at the top of the
-  screen while you scroll, so you see it wherever on the page you are working. Nothing happens to your text until you
-  click Merge. Chrome checks less often in background tabs, so in a tab you are
-  not looking at the banner can be up to a minute late.
+  screen while you scroll, so you see it wherever on the page you are working.
+  Nothing happens to your text until you click Merge. Chrome checks less often
+  in background tabs, so in a tab you are not looking at the banner can be up
+  to a minute late.
 - Merging works on whole lines, like `git merge`: edits on different lines are
   combined, and the cursor stays on the line you were typing. Merging replaces
-  the text box contents, so Ctrl Z cannot undo past it.
+  the text box contents, so Ctrl Z cannot undo past it. While a clash waits for
+  your choice, the editor toolbar is disabled too.
 - If you both changed the same or neighbouring lines, each clash is shown with
   their lines and yours, and you pick **Keep mine**, **Keep theirs** or **Keep
   both**. The text box is read-only until every clash is decided. A paragraph is often

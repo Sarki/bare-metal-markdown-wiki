@@ -699,7 +699,11 @@
     });
   }
   function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
-  function draftReadOnly(ed, locked) { if (ed.cm) ed.cm.codemirror.setOption('readOnly', locked); else el('editText').readOnly = locked; }
+  function draftReadOnly(ed, locked) {
+    if (!ed.cm) { el('editText').readOnly = locked; return; }
+    ed.cm.codemirror.setOption('readOnly', locked);
+    ed.cm.gui.toolbar.querySelectorAll('button').forEach(function (b) { b.disabled = locked; });
+  }
   function lockEditor(locked) {
     draftReadOnly(editing, locked);
     el('editSave').disabled = locked; el('editCancel').disabled = locked;

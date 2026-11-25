@@ -317,7 +317,7 @@ test('with the vendored editor present, EasyMDE is the draft: saving, merging an
   const tree = { 'Home.md': page('v1\n') }; const f = fakeFolder('A', tree);
   let made = null;
   const w = makeApp({ hash: '#Home', window: { EasyMDE: function (opts) {
-    const self = { text: opts.element.value, cursor: 0, readOnly: false, history: true, torn: false }; made = self;
+    const self = { text: opts.element.value, cursor: 0, readOnly: false, history: true, torn: false, buttons: [{ disabled: false }, { disabled: false }] }; made = self;
     return {
       value: function () { return self.text; },
       codemirror: {
@@ -326,7 +326,8 @@ test('with the vendored editor present, EasyMDE is the draft: saving, merging an
         setCursor: function (i) { self.cursor = i; }, setValue: function (t) { self.text = t; self.history = true; }, clearHistory: function () { self.history = false; },
         getScrollInfo: function () { return { left: 0, top: 0 }; }, scrollTo: function () {}
       },
-      toTextArea: function () { self.torn = true; }
+      toTextArea: function () { self.torn = true; },
+      gui: { toolbar: { querySelectorAll: function (q) { return q === 'button' ? self.buttons : []; } } }
     };
   } } });
   await w.app.start(f.root);
@@ -350,9 +351,11 @@ test('with the vendored editor present, EasyMDE is the draft: saving, merging an
   tree['Home.md'] = page('a theirs\nb\nc\nd\ne theirs\n'); await w.app.pollLive();
   w.app.mergeIncoming();
   check(bad, made.readOnly === true, 'the editor stayed writable during a clash');
+  check(bad, made.buttons.every(function (x) { return x.disabled; }), 'the toolbar (bold, undo...) could still change the text during a clash');
   const k = /data-k="(\d+)"/.exec(w.conflicts());
   w.app.pickConflict(Number(k && k[1]), 'mine');
   check(bad, made.readOnly === false && made.text === 'a theirs\nb\nc\nd\ne mine\n', 'after the clash: ' + JSON.stringify(made));
+  check(bad, made.buttons.every(function (x) { return !x.disabled; }), 'the toolbar stayed disabled after the clash was decided');
 
   w.app.cancelEditor(); await settle();
   check(bad, made.torn === true, 'the editor instance was not torn down when cancelling');
