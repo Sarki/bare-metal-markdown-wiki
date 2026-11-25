@@ -10,7 +10,7 @@ const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
   const showDirectoryPicker = function () { return env.pick(); };
   const imgExtRe = /\\.png$/i, wikiName = 'W', IDB = { set: async function () {} };
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '';
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', buildReminder = null;
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
   function setMode(m) { env.label = m === 'live' ? liveHandle.name : 'bundled'; }
@@ -21,6 +21,7 @@ const factory = (0, eval)(`(function (env) {
   function renderPage(slug) {
     const p = PAGES[slug];
     el('page').innerHTML = p ? 'PAGE ' + slug + ' | title=' + p.title + ' | tags=' + p.tags.join(',') + ' | ' + p.content : 'NOTFOUND ' + slug;
+    el('editNote').textContent = ''; // the real renderPage rebuilds that slot empty every render
   }
   function renderHome() { el('page').innerHTML = 'HOME ' + Object.keys(PAGES).sort().join(','); }
   ${GRABBED}
@@ -127,6 +128,19 @@ test('baseline: an edit is saved and the saved text is shown', async function ()
   const bad = [];
   check(bad, textOf(tree['Home.md']) === 'v2', 'file on disk is ' + JSON.stringify(textOf(tree['Home.md'])));
   check(bad, w.screen().includes('| v2'), 'screen: ' + w.screen());
+  check(bad, /build/.test(w.env.el('editNote').textContent || ''), 'no build reminder after the save: ' + JSON.stringify(w.env.el('editNote').textContent));
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('the build reminder shows after the first save of a folder, not after every one', async function () {
+  const tree = { 'A.md': page('a'), 'B.md': page('b') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#A' }); await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor(); w.editor().value = 'a2'; await w.app.saveEditor();
+  check(bad, /build/.test(w.env.el('editNote').textContent || ''), 'no reminder after the first save');
+  w.go('#B'); await w.app.openEditor(); w.editor().value = 'b2'; await w.app.saveEditor();
+  check(bad, w.env.el('editNote').textContent === '', 'the reminder nagged again on the next save: ' + JSON.stringify(w.env.el('editNote').textContent));
+  check(bad, textOf(tree['A.md']) === 'a2' && textOf(tree['B.md']) === 'b2', 'disk: A=' + textOf(tree['A.md']) + ' B=' + textOf(tree['B.md']));
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 

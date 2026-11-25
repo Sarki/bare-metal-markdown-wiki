@@ -145,6 +145,10 @@ first to switch folders.
   saved over here either.
 - A file with Windows line endings keeps them when saved.
 - Leaving the page while editing discards unsaved changes.
+- After a save, a note reminds you to re-run the build: what **Save** updates
+  is the `.md` file, and wikis opened without live render read the bundled
+  `data.js` snapshot, which only changes when the build script runs. It shows
+  once per folder per tab — one build covers every save.
 - Firefox and Safari cannot write to a folder, so they get no Edit button and
   only see the bundled `data.js` snapshot, which does not include edits until
   someone re-runs the build.

@@ -829,7 +829,9 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   border-radius: var(--radius);
 }
 .edit-note:empty { display: none; }
-.edit-note:not(:empty)::before { content: "\26a0 "; }
+.edit-note:not(:empty):not(.edit-note--info)::before { content: "\26a0 "; }
+/* the post-save build reminder is information, not a warning: accent colour, no triangle */
+.edit-note--info { color: var(--accent); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 
 /* ── the EasyMDE edit box (vendor/easymde.min.css + .js) ───────────────────
    EasyMDE replaces the textarea above with CodeMirror. "> textarea" in the rule
