@@ -3,7 +3,8 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'openEditor', 'saveEditor', 'cancelEditor'].map(grab).join('\n');
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'openEditor', 'saveEditor', 'cancelEditor',
+  'lockOf', 'lockAge', 'takeLock', 'dropLock', 'LOCK_STALE'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document;
@@ -30,7 +31,7 @@ const factory = (0, eval)(`(function (env) {
   };
 })`);
 
-let clock = 1000;
+let clock = Date.now(); // real timestamps, so a lock's age measured against Date.now() means something
 function page(text) { return { bytes: Buffer.isBuffer(text) ? text : Buffer.from(text, 'utf8'), modified: ++clock }; }
 function textOf(f) { return f.bytes.toString('utf8'); }
 function isFile(n) { return Buffer.isBuffer(n.bytes); }
@@ -42,8 +43,12 @@ function fakeFolder(name, tree) {
       async queryPermission() { return 'granted'; },
       async requestPermission() { return 'granted'; },
       async getDirectoryHandle(n) { if (!node[n] || isFile(node[n])) throw new Error('NotFoundError'); return dir(node[n], prefix + n + '/'); },
-      async getFileHandle(n) { if (!node[n] || !isFile(node[n])) throw new Error('NotFoundError'); return file(node[n], n, prefix + n); },
-      async *values() { for (const k of Object.keys(node)) yield isFile(node[k]) ? file(node[k], k, prefix + k) : Object.assign(dir(node[k], prefix + k + '/'), { name: k }); }
+      async getFileHandle(n, opts) {
+        if (!node[n]) { if (!opts || !opts.create) throw new Error('NotFoundError'); node[n] = page(''); }
+        return file(node[n], n, prefix + n);
+      },
+      async removeEntry(n) { if (!node[n]) throw new Error('NotFoundError'); delete node[n]; },
+      async *values() { for (const k of Object.keys(node)) { if (!node[k]) continue; yield isFile(node[k]) ? file(node[k], k, prefix + k) : Object.assign(dir(node[k], prefix + k + '/'), { name: k }); } }
     };
   }
   function file(f, n, p) {
@@ -123,6 +128,57 @@ test('baseline: a poll shows a change made by someone else', async function () {
   const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
   tree['Home.md'] = page('their v2'); await w.app.pollLive();
   if (!w.screen().includes('their v2')) throw new Error('screen: ' + w.screen());
+});
+
+test('a page another user has locked does not open in the editor', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  tree['Home.md.lock'] = page('');
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  await w.app.openEditor();
+  const bad = [];
+  check(bad, !w.editor() && !w.app.editing, 'the editor opened over their lock; screen: ' + w.screen());
+  check(bad, /open for editing/.test(w.env.el('editNote').textContent || ''), 'no explanation on screen: ' + JSON.stringify(w.env.el('editNote').textContent));
+  check(bad, textOf(tree['Home.md']) === 'v1', 'the page was changed');
+  check(bad, !w.app.pages['Home.md.lock'], 'the lock file was listed as a page: ' + Object.keys(w.app.pages));
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('a stale lock left by a tab that died does not block editing', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  tree['Home.md.lock'] = page(''); tree['Home.md.lock'].modified = Date.now() - 60000;
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  await w.app.openEditor();
+  if (!w.app.editing) throw new Error('a minute-old lock blocked the editor: ' + w.env.el('editNote').textContent);
+});
+
+test('editing writes a lock beside the page, and saving, cancelling or leaving removes it', async function () {
+  const tree = { 'A.md': page('a'), 'B.md': page('b') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#A' }); await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor();
+  check(bad, 'A.md.lock' in tree, 'no lock file while editing; folder: ' + Object.keys(tree));
+  check(bad, !('B.md.lock' in tree), 'a lock was written for a page nobody opened');
+  w.editor().value = 'a v2'; await w.app.saveEditor();
+  check(bad, !('A.md.lock' in tree), 'the lock survived a save');
+  await w.app.openEditor(); w.app.cancelEditor(); await settle();
+  check(bad, !('A.md.lock' in tree), 'the lock survived a cancel');
+  await w.app.openEditor(); w.go('#B'); await settle();
+  check(bad, !('A.md.lock' in tree), 'the lock survived leaving the page');
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('while editing, the poll refreshes the lock and still does not re-read the folder', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  await w.app.openEditor();
+  const before = tree['Home.md.lock'].modified;
+  tree['Home.md'] = page('their v2');
+  await w.app.pollLive();
+  const bad = [];
+  check(bad, tree['Home.md.lock'].modified !== before, 'the lock was not refreshed');
+  check(bad, !w.screen().includes('their v2'), 'their edit replaced what is on screen');
+  check(bad, w.editor() && w.editor().value === 'v1', 'the draft box changed: ' + (w.editor() ? w.editor().value : 'gone'));
+  if (bad.length) throw new Error(bad.join('\n  '));
 });
 
 test('baseline: saving over a newer version is refused and the text stays in the box', async function () {

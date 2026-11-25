@@ -100,15 +100,26 @@ permission to write to the folder.
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and
 picks the same folder. Each open wiki checks the folder every 5 seconds and
-shows changes made by others (it pauses while the tab is in the background or
-while you are editing). While you are editing, the **Live render** button does
-nothing; save or cancel first to switch folders.
+shows changes made by others (it pauses while the tab is in the background, and
+while you are editing that same tick only keeps your edit lock fresh). While you
+are editing, the **Live render** button does nothing; save or cancel first to
+switch folders.
 
 - If someone else saved the page while you were editing it, **Save** refuses
   and keeps your text in the box, so you can copy it and redo the edit on their
   version. Two saves made at nearly the same moment can still overwrite one
-  another — there is no locking without a server, and on a slow drive the
-  unprotected moment lasts as long as the write itself.
+  another — the lock below is advisory, there is no real locking without a
+  server, and on a slow drive the unprotected moment lasts as long as the write
+  itself.
+- Before **Edit** opens, it looks for a `Page.md.lock` file beside the page. If
+  another open wiki wrote one in the last 20 seconds, you get "someone has this
+  page open for editing" instead of the text box, so you are warned before you
+  type rather than only when you save. While you edit, that lock is rewritten
+  every 5 seconds; it is deleted when you save, cancel or leave the page, and a
+  lock left by a tab that crashed simply goes stale, so nobody can be locked out
+  of the folder. It works like vim's `.swp`: advisory, and it does not make the
+  save itself atomic. Lock files are never listed as pages; if the folder is a
+  git repo, ignore them with `*.md.lock`.
 - Pages are saved as UTF-8 text without a byte-order mark. A page in another
   encoding (for example Windows "ANSI") cannot be edited here; convert it to
   UTF-8 first.

@@ -503,6 +503,7 @@
     el('content').scrollTop = 0; // hash-only navigation: the browser never resets the article container, so do it here
   }
   function showPage(slug) {
+    if (editing) dropLock(editing.root, editing.path); // leaving the page ends the edit, lock included
     shownPage = slug; editing = null;
     el('page').classList.remove('home');
     if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
@@ -619,13 +620,42 @@
     return showFolder(liveHandle);
   }
   async function pollLive() {
-    if (mode !== 'live' || editing || loading || document.hidden) return;
+    // keep our lock fresh while editing instead of re-reading the folder; shortcut: a background
+    // tab's timer is throttled, so its lock can lapse — the save-time check still catches that clash
+    if (editing) { await takeLock(editing.root, editing.path); return; }
+    if (mode !== 'live' || loading || document.hidden) return;
     const mine = loading = { h: liveHandle };
     let changed = false;
     try { changed = (await folderStamp(liveHandle)) !== liveStamp; } catch (e) {}
     if (loading !== mine) return;
     loading = null;
     if (changed) { lastRefresh = 0; await refreshLive(); }
+  }
+
+  // ---------- edit locks ----------
+  // Advisory, like vim's .swp: they warn before a second person types half an hour into the same
+  // page, they never replace the save-time conflict check, and a lock left behind by a tab that
+  // died expires by itself, so nobody can be locked out of the folder.
+  // the 5s poll keeps a live lock fresh; anything older than this means that tab is gone
+  const LOCK_STALE = 20000;
+  async function lockOf(root, path) {
+    const parts = path.split('/');
+    let dir = root;
+    for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+    return { dir: dir, name: parts[parts.length - 1] + '.lock' }; // Home.md -> Home.md.lock
+  }
+  async function lockAge(root, path) { // ms since it was written, or null when the page is free
+    // shortcut: the age compares our clock with the file's timestamp, so a machine whose clock is
+    // off by more than LOCK_STALE looks stale or immortal; revisit if shared drives ever disagree.
+    try { const l = await lockOf(root, path); return Date.now() - (await (await l.dir.getFileHandle(l.name)).getFile()).lastModified; }
+    catch (e) { return null; }
+  }
+  async function takeLock(root, path) { // best effort: a folder that refuses the file still edits
+    try { const l = await lockOf(root, path); const w = await (await l.dir.getFileHandle(l.name, { create: true })).createWritable(); await w.close(); }
+    catch (e) {}
+  }
+  async function dropLock(root, path) {
+    try { const l = await lockOf(root, path); await l.dir.removeEntry(l.name); } catch (e) {}
   }
 
   function editMsg(text) { const m = el('editMsg'); if (m) m.textContent = text; }
@@ -635,6 +665,12 @@
     if (!p || !h || editing) return;
     try {
       if ((await h.requestPermission({ mode: 'readwrite' })) !== 'granted') return;
+      const held = await lockAge(h, p.path);
+      if (held !== null && held < LOCK_STALE) {
+        el('editNote').textContent = 'Someone has this page open for editing (their lock was written ' + Math.round(held / 1000) +
+          's ago). It clears when they save or cancel, or on its own after ' + Math.round(LOCK_STALE / 1000) + 's — try again in a moment.';
+        return;
+      }
       const opened = await readForEdit(h, p.path);
       if (liveHandle !== h || !PAGES[slug] || (shownPage || landingPage) !== slug || editing) return;
       if (opened.text.indexOf('\uFFFD') !== -1) {
@@ -642,6 +678,7 @@
         return;
       }
       editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false };
+      await takeLock(h, p.path);
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><textarea id="editText" spellcheck="false"></textarea>' +
         '<div class="editor-bar"><button id="editSave" class="btn" type="button" data-edit="save">Save</button>' +
