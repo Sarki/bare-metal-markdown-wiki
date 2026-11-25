@@ -50,6 +50,7 @@
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let liveStamp = '';
   let editing = null;
+  let buildReminder = null;    // the folder whose pending-build note this tab has already shown
   let shownPage = '';
   let loading = null;
   let tocHtml = '';            // current page's TOC, injected into the sidebar or rail
@@ -736,6 +737,13 @@
       return;
     }
     renderTags(); showPage(shownPage);
+    // remind once per folder per tab, not after every save: one build covers them all, and a second
+    // reminder on the next page would be noise (a reload clears it, so a new session gets one again)
+    if (buildReminder !== ed.root) {
+      buildReminder = ed.root;
+      const n = el('editNote'); // the page re-rendered with a fresh notice slot: use it for the build reminder
+      if (n) { n.classList.add('edit-note--info'); n.textContent = 'Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.'; }
+    }
   }
   function cancelEditor() { showPage(shownPage); lastRefresh = 0; refreshLive(); }
 

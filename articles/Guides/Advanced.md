@@ -285,6 +285,8 @@ build.bat     # Windows — double-click, offline
 
 `data.js` is generated — a hand edit there is lost at the next build.
 Edit the `.md` files under `articles/` instead; the file's modification
-time is what drives the "recent edits" list on the home page.
+time is what drives the "recent edits" list on the home page. Editing with
+**Live render** writes those same files from the browser — when you are done,
+run the build once and wikis opened without live render pick the new text up.
 
 Back to [[Home]], or revisit [[Basics]] and [[Formatting]].
