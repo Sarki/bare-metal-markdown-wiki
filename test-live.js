@@ -4,12 +4,14 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor',
-  'lockOf', 'lockAge', 'takeLock', 'dropLock', 'lockQueued', 'LOCK_STALE'].map(grab).join('\n');
+  'lockOf', 'lockAge', 'takeLock', 'dropLock', 'lockQueued', 'LOCK_STALE', 'leaveLive'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
   const showDirectoryPicker = function () { return env.pick(); };
-  const imgExtRe = /\\.png$/i, wikiName = 'W', IDB = { set: async function () {} };
+  const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
+  const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
+  function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
   let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', lockOps = Promise.resolve(), buildReminder = null;
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
@@ -25,7 +27,7 @@ const factory = (0, eval)(`(function (env) {
   function renderHome() { el('page').innerHTML = 'HOME ' + Object.keys(PAGES).sort().join(','); }
   ${GRABBED}
   return {
-    route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder,
+    route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder, leaveLive: leaveLive,
     get lockOps() { return lockOps; }, // a leaving tab drops its lock without waiting: tests awaiting this see the folder settled
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
@@ -375,6 +377,35 @@ test('a folder switch that fails to load does not redirect saves to the new fold
   await w.app.openEditor();
   if (w.editor()) { w.editor().value = 'edited'; await w.app.saveEditor(); }
   check(bad, textOf(treeB['Home.md']) === 'B home', 'B/Home.md on disk is now ' + JSON.stringify(textOf(treeB['Home.md'])));
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('the remembered folder is keyed per install path, so other local wikis do not live-render it', async function () {
+  const tree = { 'Home.md': page('b home') }; const b = fakeFolder('B', tree);
+  const w = makeApp({ hash: '#Home' });
+  w.env.pick = async function () { return b.root; };
+  await w.app.chooseFolder();
+  const bad = [];
+  check(bad, w.env.savedKey === 'dir /w/', 'remembered under ' + JSON.stringify(w.env.savedKey) + ': one shared key makes every file:// page on the machine live-render the last folder picked');
+  check(bad, w.env.label === 'B', 'not live after choosing: ' + w.env.label);
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('the Bundled button goes back to the snapshot, never yanks the folder mid-edit, and forgets the folder', async function () {
+  const tree = { 'Home.md': page('live home') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); w.env.bundled = [{ slug: 'Home', mtime: 1, src: 'bundled home' }];
+  await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor(); w.app.leaveLive();
+  check(bad, w.app.editing && w.env.label === 'A', 'leaving yanked the folder out from under an open draft');
+  w.app.cancelEditor(); w.app.leaveLive();
+  check(bad, w.env.label === 'bundled', 'label after leaving: ' + w.env.label);
+  check(bad, w.app.handle === null, 'still connected to ' + w.app.handle);
+  check(bad, w.screen().includes('bundled home'), 'page after leaving: ' + w.screen());
+  check(bad, w.env.forgot === true, 'the remembered folder was not forgotten, so the next open would go live again');
+  check(bad, (await w.app.refreshLive()) === false, 'a refresh pulled live back in');
+  await w.app.pollLive();
+  check(bad, w.env.label === 'bundled', 'the heartbeat came back live');
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 

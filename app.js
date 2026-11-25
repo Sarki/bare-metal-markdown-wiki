@@ -488,6 +488,7 @@
     e.textContent = m === 'live' ? ('live · ' + (liveHandle ? liveHandle.name : 'folder')) : 'bundled · data.js';
     e.className = 'mode' + (m === 'live' ? ' live' : '');
     el('refresh').classList.toggle('hidden', m !== 'live');
+    el('leave').classList.toggle('hidden', m !== 'live');
   }
 
   // ---------- routing ----------
@@ -583,6 +584,7 @@
       r.readAsDataURL(f.slice(0, f.size, mime));
     });
   }
+  const dirKey = 'dir ' + location.pathname.replace(/[^/]*$/, ''); // file:// gives every local page one shared IndexedDB, so the one 'dir' slot used to make every wiki live-render the last folder picked; keying by this index.html's own folder keeps each wiki to its own
   const IDB = {
     db: null,
     open() {
@@ -595,7 +597,8 @@
       });
     },
     async get(k) { const d = await this.open(); return new Promise(function (res) { const g = d.transaction('kv').objectStore('kv').get(k); g.onsuccess = function () { res(g.result); }; }); },
-    async set(k, v) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); }
+    async set(k, v) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); },
+    async del(k) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); }
   };
   async function showFolder(h) {
     const mine = loading = { h: h };
@@ -616,8 +619,16 @@
       const h = await showDirectoryPicker({ mode: 'readwrite' });
       if (!(await showFolder(h))) return;
       closeNav();
-      await IDB.set('dir', h);
+      await IDB.set(dirKey, h);
     } catch (e) { /* cancelled or permission denied */ }
+  }
+  function leaveLive() { // the way back out: bundled snapshot now, and this wiki forgets the folder so the next open does not quietly live-render it again
+    if (editing || mode !== 'live') return;
+    liveHandle = null; liveStamp = ''; mode = 'bundled';
+    IDB.del(dirKey).catch(function () {}); // best effort: if IDB is broken, the cost is just the folder reopening next time
+    loadBundled();
+    buildIndex(); renderTags(); renderSidebar(); setMode('bundled');
+    route(); // the live page on screen may not exist in the snapshot
   }
   function refreshLive() {
     if (mode !== 'live' || editing || (loading && loading.h !== liveHandle)) return false;
@@ -848,10 +859,11 @@
     });
 
     try {
-      const h = await IDB.get('dir');
+      const h = await IDB.get(dirKey);
       if (h) { const perm = await h.queryPermission({ mode: 'read' }); if (perm === 'granted') { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; } }
     } catch (e) {}
     el('choose').addEventListener('click', chooseFolder);
+    el('leave').addEventListener('click', leaveLive);
     if (mode !== 'live') loadBundled();
 
     buildIndex();

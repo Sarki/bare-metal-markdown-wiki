@@ -81,7 +81,12 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
   [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API) —
   Chrome/Edge)
 - Pick your Markdown folder **once**; the choice is remembered (IndexedDB) and
-  reused on every later open
+  reused on every later open. It is remembered **per wiki copy** — the memory
+  is keyed by where that `index.html` sits, so two wikis on one machine never
+  end up live-rendering each other's folder (under `file://` the whole
+  computer shares one IndexedDB)
+- The **Bundled** button (shown in live mode) leaves live render and forgets
+  the folder; **Live render** picks one again when you want it back
 - The folder is **checked for changes every 5 seconds** and re-read when the
   tab regains focus, plus a **↻** button for manual refresh — a serverless
   `file://` page has no real file watcher
