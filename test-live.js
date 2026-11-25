@@ -3,11 +3,11 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'openEditor', 'saveEditor', 'cancelEditor',
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor',
   'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
-  const el = env.el, location = env.location, document = env.document;
+  const el = env.el, location = env.location, document = env.document, window = env.window || {};
   const showDirectoryPicker = function () { return env.pick(); };
   const imgExtRe = /\\.png$/i, wikiName = 'W', IDB = { set: async function () {} };
   let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '';
@@ -101,7 +101,7 @@ function makeApp(opts) {
     set(v) { html = v; editorEls = {}; ['editText', 'editMsg', 'editSave', 'editCancel', 'editAlert', 'editConflicts'].forEach(function (id) { if (v.indexOf('id="' + id + '"') !== -1) editorEls[id] = mk(); }); }
   });
   const env = {
-    location: { hash: opts.hash || '' }, document: { hidden: false, title: '' }, landingPage: opts.landingPage || '', label: '', pick: null,
+    location: { hash: opts.hash || '' }, document: { hidden: false, title: '' }, landingPage: opts.landingPage || '', label: '', pick: null, window: opts.window || {},
     el(id) { if (id === 'page') return pageEl; if (/^edit(Text|Msg|Save|Cancel|Alert|Conflicts)$/.test(id)) return (editorEls && editorEls[id]) || null; return els[id] || (els[id] = mk()); }
   };
   const app = factory(env);
@@ -310,6 +310,52 @@ test('saving over their save on other lines merges and saves', async function ()
   const bad = [];
   check(bad, textOf(tree['Home.md']) === 'a mine\nb\nc theirs\n', 'file on disk: ' + JSON.stringify(textOf(tree['Home.md'])));
   check(bad, !w.app.editing, 'the editor stayed open');
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('with the vendored editor present, EasyMDE is the draft: saving, merging and clashes all go through it, and leaving tears it down', async function () {
+  const tree = { 'Home.md': page('v1\n') }; const f = fakeFolder('A', tree);
+  let made = null;
+  const w = makeApp({ hash: '#Home', window: { EasyMDE: function (opts) {
+    const self = { text: opts.element.value, cursor: 0, readOnly: false, history: true, torn: false }; made = self;
+    return {
+      value: function () { return self.text; },
+      codemirror: {
+        setOption: function (k, v) { if (k === 'readOnly') self.readOnly = v; },
+        getCursor: function () { return self.cursor; }, indexFromPos: function (i) { return i; }, posFromIndex: function (i) { return i; },
+        setCursor: function (i) { self.cursor = i; }, setValue: function (t) { self.text = t; self.history = true; }, clearHistory: function () { self.history = false; },
+        getScrollInfo: function () { return { left: 0, top: 0 }; }, scrollTo: function () {}
+      },
+      toTextArea: function () { self.torn = true; }
+    };
+  } } });
+  await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor();
+  check(bad, made && made.text === 'v1\n', 'the file text never reached the editor: ' + JSON.stringify(made && made.text));
+  made.text = 'from the editor\n'; w.editor().value = 'stale hidden textarea';
+  await w.app.saveEditor();
+  check(bad, textOf(tree['Home.md']) === 'from the editor\n', 'the hidden textarea was saved instead of the editor: ' + JSON.stringify(textOf(tree['Home.md'])));
+  check(bad, made.torn === true, 'the editor instance was not torn down after the save');
+
+  tree['Home.md'] = page('a\nb\nc\nd\ne\n'); await w.app.forceRefresh();
+  await w.app.openEditor();
+  made.text = 'a\nb\nc\nd\ne mine\n'; made.cursor = 8;
+  tree['Home.md'] = page('a theirs\nb\nc\nd\ne\n'); await w.app.pollLive();
+  w.app.mergeIncoming();
+  check(bad, made.text === 'a theirs\nb\nc\nd\ne mine\n', 'merged editor text: ' + JSON.stringify(made.text));
+  check(bad, made.cursor === 15, 'the cursor did not follow my line: ' + made.cursor);
+  check(bad, made.history === false, 'undo could step back past the merge to a draft without their lines');
+
+  tree['Home.md'] = page('a theirs\nb\nc\nd\ne theirs\n'); await w.app.pollLive();
+  w.app.mergeIncoming();
+  check(bad, made.readOnly === true, 'the editor stayed writable during a clash');
+  const k = /data-k="(\d+)"/.exec(w.conflicts());
+  w.app.pickConflict(Number(k && k[1]), 'mine');
+  check(bad, made.readOnly === false && made.text === 'a theirs\nb\nc\nd\ne mine\n', 'after the clash: ' + JSON.stringify(made));
+
+  w.app.cancelEditor(); await settle();
+  check(bad, made.torn === true, 'the editor instance was not torn down when cancelling');
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 

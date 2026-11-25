@@ -340,7 +340,10 @@
     }
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
-    if (mode === 'live') page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button><span id="editNote" class="edit-msg"></span>');
+    if (mode === 'live') { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button>');
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
+    }
     fixMdLinks(page, p.folder);
     highlightCode(page);
     runKaTeX(page);
@@ -503,6 +506,7 @@
     el('content').scrollTop = 0; // hash-only navigation: the browser never resets the article container, so do it here
   }
   function showPage(slug) {
+    if (editing && editing.cm) editing.cm.toTextArea();
     shownPage = slug; editing = null;
     el('page').classList.remove('home');
     if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
@@ -683,7 +687,23 @@
   }
 
   function editMsg(text) { const m = el('editMsg'); if (m) m.textContent = text; }
-  function lockEditor(locked) { el('editText').readOnly = locked; el('editSave').disabled = locked; el('editCancel').disabled = locked; }
+  // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
+  // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
+  // autoDownloadFontAwesome stops it pulling Font Awesome off a CDN — the wiki has to work offline.
+  function makeEditor(ta) {
+    if (!window.EasyMDE) return null; // vendor/easymde.min.js missing: the plain textarea still edits
+    return new window.EasyMDE({
+      element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
+      autoDownloadFontAwesome: false,
+      toolbar: ['bold', 'italic', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo']
+    });
+  }
+  function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
+  function draftReadOnly(ed, locked) { if (ed.cm) ed.cm.codemirror.setOption('readOnly', locked); else el('editText').readOnly = locked; }
+  function lockEditor(locked) {
+    draftReadOnly(editing, locked);
+    el('editSave').disabled = locked; el('editCancel').disabled = locked;
+  }
   async function openEditor() {
     const slug = shownPage || landingPage; const p = PAGES[slug]; const h = liveHandle;
     if (!p || !h || editing) return;
@@ -695,14 +715,16 @@
         el('editNote').textContent = 'This page is not saved as UTF-8 text, so saving it here would damage its special characters. Convert it to UTF-8 in a text editor first.';
         return;
       }
-      editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false, incoming: null, conflict: null };
+      editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false, incoming: null, conflict: null, cm: null };
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><div id="editAlert" class="edit-alert"></div><div id="editConflicts" class="edit-conflicts"></div>' +
         '<textarea id="editText" spellcheck="false"></textarea>' +
         '<div class="editor-bar"><button id="editSave" class="btn" type="button" data-edit="save">Save</button>' +
         '<button id="editCancel" class="btn" type="button" data-edit="cancel">Cancel</button><span id="editMsg" class="edit-msg"></span></div></div>';
-      el('editText').value = opened.text;
-      el('editText').focus();
+      const ta = el('editText');
+      ta.value = opened.text;
+      editing.cm = makeEditor(ta);
+      if (!editing.cm) ta.focus();
       tocHtml = ''; placeToc(); markActive(); el('backlinks').innerHTML = '';
     } catch (e) {}
   }
@@ -711,7 +733,7 @@
     if (!ed || ed.saving || ed.conflict) return;
     ed.saving = true; lockEditor(true); editMsg('Saving\u2026');
     let r;
-    try { r = await saveFile(ed.root, ed.path, el('editText').value, ed.version); }
+    try { r = await saveFile(ed.root, ed.path, draftText(ed), ed.version); }
     catch (e) { r = { error: e }; }
     if (r.ok) {
       if (loading && loading.h === ed.root) loading = null;
@@ -765,25 +787,31 @@
     if (!ed || !ed.incoming || ed.saving || ed.conflict) return;
     const theirs = ed.incoming;
     ed.incoming = null; el('editAlert').innerHTML = '';
-    reconcile(ed, merge3(ed.version.text, el('editText').value, theirs.text), theirs);
+    reconcile(ed, merge3(ed.version.text, draftText(ed), theirs.text), theirs);
   }
   function reconcile(ed, parts, theirs) {
     if (!parts.some(function (p) { return p.conflict; })) { putMerged(ed, parts, theirs); return; }
     ed.conflict = { parts: parts, version: theirs, choices: {} };
-    el('editText').readOnly = true; el('editSave').disabled = true;
+    draftReadOnly(ed, true); el('editSave').disabled = true;
     showConflicts(ed);
   }
   function putMerged(ed, parts, theirs) {
-    const box = el('editText'), top = box.scrollTop;
+    const cm = ed.cm && ed.cm.codemirror, box = el('editText');
+    const typedAt = cm ? cm.indexFromPos(cm.getCursor()) : box.selectionStart;
     let mineAt = 0, outAt = 0, cursor = null;
     for (const p of parts) {
-      const at = box.selectionStart - mineAt, kept = p.text === p.mine;
+      const at = typedAt - mineAt, kept = p.text === p.mine;
       if (cursor === null && (kept ? at <= p.mine.length : at < p.mine.length)) cursor = kept ? outAt + at : outAt;
       mineAt += p.mine.length; outAt += p.text.length;
     }
-    box.value = parts.map(function (p) { return p.text; }).join('');
-    box.setSelectionRange(cursor === null ? outAt : cursor, cursor === null ? outAt : cursor);
-    box.scrollTop = top;
+    const merged = parts.map(function (p) { return p.text; }).join(''), to = cursor === null ? outAt : cursor;
+    if (cm) {
+      const scroll = cm.getScrollInfo();
+      cm.setValue(merged); cm.clearHistory(); cm.setCursor(cm.posFromIndex(to)); cm.scrollTo(scroll.left, scroll.top);
+    } else {
+      const top = box.scrollTop;
+      box.value = merged; box.setSelectionRange(to, to); box.scrollTop = top;
+    }
     ed.version = theirs;
   }
   function showConflicts(ed) {
@@ -808,7 +836,7 @@
       return { text: c.choices[i] === 'mine' ? p.mine : c.choices[i] === 'theirs' ? p.theirs : both(p), mine: p.mine };
     });
     ed.conflict = null; el('editConflicts').innerHTML = '';
-    el('editText').readOnly = false; el('editSave').disabled = false;
+    draftReadOnly(ed, false); el('editSave').disabled = false;
     putMerged(ed, parts, c.version);
     editMsg('Their changes are merged into your text. Check it, then Save.');
   }

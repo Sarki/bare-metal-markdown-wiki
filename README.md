@@ -97,6 +97,14 @@ Markdown in a text box; **Save** writes the `.md` file straight back to the
 folder, **Cancel** throws the changes away. The browser may ask for
 permission to write to the folder.
 
+That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
+headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
+and a small toolbar covers bold, italic, heading, link, quote, code, lists,
+table and undo/redo. Its buttons show words instead of icons because the wiki
+ships no icon font, and there is no preview button — EasyMDE's own preview uses
+a different Markdown engine, so `[[links]]` and `:::` boxes would come out
+wrong there. Nothing is fetched from the internet.
+
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and
 picks the same folder. Each open wiki checks the folder every 5 seconds and
@@ -179,7 +187,8 @@ version adds settings.
 Drop the new version on top of the folder (index.html, style.css, app.js,
 build.sh/bat, vendor/), keep those three, then re-run the build. Style tweaks
 go in `user.css`, which loads after `style.css` — override the `--bg`/`--accent`
-etc. variables or any selector there instead of editing `style.css`.
+etc. variables or any selector there instead of editing `style.css` (the edit box
+is `.EasyMDEContainer .CodeMirror`, the toolbar `.editor-toolbar`).
 
 ## Markdown conventions
 
@@ -305,7 +314,7 @@ data.js           generated snapshot of articles/ (rebuild, don't edit)
 build.sh          offline rebuild — bash
 build.bat         offline rebuild — Windows
 articles/         the knowledge base (sample pages included)
-vendor/           markdown-it, mdit-extras, highlight.js, KaTeX (+fonts), mermaid
+vendor/           markdown-it, mdit-extras, highlight.js, KaTeX (+fonts), mermaid, EasyMDE
 test-render.js    smoke test: node test-render.js (run after upgrading vendor/)
 test-app.js       smoke test: node test-app.js (link/footnote source passes)
 ```
