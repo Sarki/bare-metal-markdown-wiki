@@ -714,8 +714,8 @@
     let t = el('toast');
     if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
     t.textContent = text; t.classList.add('toast--on');
-    clearTimeout(toastTimer); // the long build reminder needs more time to read than a plain "Saved."
-    toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, text.length > 60 ? 6000 : 2500);
+    clearTimeout(toastTimer); // long enough to read the full build reminder
+    toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, 6000);
   }
   // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
   // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
