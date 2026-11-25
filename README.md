@@ -90,6 +90,9 @@ Instead of rebuilding, you can point the wiki directly at a folder on disk.
 - The folder is **checked for changes every 5 seconds** and re-read when the
   tab regains focus, plus a **↻** button for manual refresh — a serverless
   `file://` page has no real file watcher
+- While the folder is being walked (startup, or right after picking it) the
+  page shows a *Reading your folder…* note instead of sitting blank — on a
+  shared network drive the first walk can take a while
 - A reload only redraws the page when something actually changed, and folders
   you open or close in the sidebar stay as you left them — mid-browse, the
   background reload never slams your open folders shut

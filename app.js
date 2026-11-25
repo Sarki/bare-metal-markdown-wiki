@@ -655,10 +655,14 @@
     async set(k, v) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); },
     async del(k) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); }
   };
+  function loadingNote() { // walking a folder on a network drive can take a while; without this the screen just sits blank and looks broken
+    if (!el('page').innerHTML) el('page').innerHTML = '<p class="loading-note">Reading your folder\u2026 this can take a while on a network drive.</p>';
+  }
   async function showFolder(h) {
     const mine = loading = { h: h };
     try {
       if ((await h.queryPermission({ mode: 'read' })) !== 'granted') return false;
+      loadingNote();
       const live = await loadLive(h);
       if (loading !== mine || editing) return false;
       if (h === liveHandle && live.stamp === liveStamp) return true; // nothing changed: no redraw, so a folder you are browsing survives focus refreshes and live polls
@@ -975,7 +979,7 @@
 
     try {
       const h = await IDB.get(dirKey);
-      if (h) { const perm = await h.queryPermission({ mode: 'read' }); if (perm === 'granted') { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; } }
+      if (h) { const perm = await h.queryPermission({ mode: 'read' }); if (perm === 'granted') { loadingNote(); applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; } }
     } catch (e) {}
     el('choose').addEventListener('click', chooseFolder);
     el('leave').addEventListener('click', leaveLive);

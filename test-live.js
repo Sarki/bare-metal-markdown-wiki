@@ -3,7 +3,7 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
   'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
@@ -832,6 +832,19 @@ function holdFirstWalk(f) {
   return g;
 }
 function copyOf(tree) { const c = {}; Object.keys(tree).forEach(function (k) { c[k] = { bytes: tree[k].bytes, modified: tree[k].modified }; }); return c; }
+
+t('a slow folder walk shows a loading note instead of a blank screen', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' });
+  const g = holdFirstWalk(f);
+  w.env.pick = async function () { return f.root; };
+  const choosing = w.app.chooseFolder(); await settle();
+  const bad = [];
+  check(bad, /Reading your folder/.test(w.screen()), 'while walking the screen showed: ' + w.screen());
+  g.release(); await choosing; await settle();
+  check(bad, !/Reading your folder/.test(w.screen()) && w.env.label === 'A', 'after the walk: ' + w.screen() + ', label ' + w.env.label);
+  return bad;
+});
 
 t('an Edit read of folder A that finishes after a switch to an identical copy B opens no editor and writes nothing into B', async function () {
   const treeA = { 'Home.md': page('same') }; const a = fakeFolder('A', treeA);
