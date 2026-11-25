@@ -2,7 +2,7 @@
 
 
 const grab = require('./test-grab.js');
-const api = (0, eval)('(function () { const imgExtRe = /\\.png$/i;' + ['fileAt', 'readForEdit', 'saveFile', 'folderStamp', 'lockOf', 'lockAge', 'takeLock', 'dropLock'].map(grab).join('\n') +
+const api = (0, eval)('(function () { const imgExtRe = /\\.png$/i; let lockOps = Promise.resolve();' + ['fileAt', 'readForEdit', 'saveFile', 'folderStamp', 'lockOf', 'lockAge', 'takeLock', 'dropLock', 'lockQueued'].map(grab).join('\n') +
   '\nreturn { readForEdit: readForEdit, saveFile: saveFile, folderStamp: folderStamp, lockAge: lockAge, takeLock: takeLock, dropLock: dropLock }; })()');
 
 let clock = Date.now(); // real timestamps, so lock ages measured against Date.now() mean something

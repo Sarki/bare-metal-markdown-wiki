@@ -778,7 +778,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   html, body { height: auto; overflow: visible; }
   body { display: block; }
   .topbar, .sidebar, .resizer, .toc-rail, .backlinks, .search-results,
-  .copybtn, .breadcrumbs { display: none !important; }
+  .copybtn, .breadcrumbs, .edit-note { display: none !important; }
   .layout { display: block; flex: none; min-height: 0; }
   .content, .content.toc-right { display: block; overflow: visible; padding: 0; }
   pre { overflow: visible; white-space: pre-wrap; border: none; }
@@ -786,7 +786,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 }
 
 .edit-btn { float: right; height: 30px; padding: 0 14px; font-size: 13px; text-transform: none; letter-spacing: normal; }
-.editor textarea {
+.editor > textarea {
   width: 100%;
   min-height: 65vh;
   box-sizing: border-box;
@@ -799,6 +799,73 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   resize: vertical;
   transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
-.editor textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.editor > textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .editor-bar { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
 .edit-msg { font-size: 13px; color: var(--muted); }
+/* lock and encoding notices: the breadcrumb line is 11px uppercase muted text where nobody saw them,
+   so they get their own warning box above the page instead */
+.edit-note {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: var(--radius);
+}
+.edit-note:empty { display: none; }
+.edit-note:not(:empty)::before { content: "\26a0 "; }
+
+/* ── the EasyMDE edit box (vendor/easymde.min.css + .js) ───────────────────
+   EasyMDE replaces the textarea above with CodeMirror. "> textarea" in the rule
+   above matters: CodeMirror has its own inner textarea that must not inherit it.
+   The toolbar buttons would show Font Awesome icons, which we do not ship, so
+   they get plain text labels here instead. */
+.EasyMDEContainer .CodeMirror {
+  font: 13.5px/1.6 var(--mono);
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.EasyMDEContainer .CodeMirror-focused { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--text); }
+.EasyMDEContainer .CodeMirror-focused .CodeMirror-selected, .EasyMDEContainer .CodeMirror-line > span > span::selection { background: var(--accent-soft); }
+.editor-toolbar {
+  background: var(--panel);
+  border-color: var(--border-strong);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.editor-toolbar button { color: var(--text); }
+.editor-toolbar button:hover { background: var(--hover); border-color: var(--border-strong); }
+.editor-toolbar button::before { font: 600 12px/1 system-ui, sans-serif; }
+.editor-toolbar button.bold::before { content: "B"; }
+.editor-toolbar button.italic::before { content: "I"; font-style: italic; }
+.editor-toolbar button.heading::before { content: "H"; }
+.editor-toolbar button.link::before { content: "link"; }
+.editor-toolbar button.quote::before { content: "quote"; }
+.editor-toolbar button.code::before { content: "code"; }
+.editor-toolbar button.unordered-list::before { content: "list"; }
+.editor-toolbar button.ordered-list::before { content: "1."; }
+.editor-toolbar button.table::before { content: "table"; }
+.editor-toolbar button.undo::before { content: "\21b6"; }
+.editor-toolbar button.redo::before { content: "\21b7"; }
+/* markdown colours, reusing the code-block palette above so both modes match */
+.cm-s-easymde .cm-formatting { color: var(--muted); }
+.cm-s-easymde .cm-header { color: var(--hl-title); }
+.cm-s-easymde .cm-link { color: var(--accent); }
+.cm-s-easymde .cm-url, .cm-s-easymde .cm-quote, .cm-s-easymde .cm-hr { color: var(--muted); }
+.cm-s-easymde .cm-comment { color: var(--hl-text); background: var(--code-bg); }
+.cm-s-easymde .cm-tag { color: var(--hl-tag); }
+.cm-s-easymde .cm-string { color: var(--hl-string); }
+.cm-s-easymde .cm-header-1 { font-size: 1.4em; }
+.cm-s-easymde .cm-header-2 { font-size: 1.25em; }
+.cm-s-easymde .cm-header-3 { font-size: 1.1em; }
+.cm-s-easymde .cm-header-4, .cm-s-easymde .cm-header-5, .cm-s-easymde .cm-header-6 { font-size: 1em; }

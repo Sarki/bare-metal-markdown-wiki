@@ -340,7 +340,10 @@
     }
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
-    if (mode === 'live') page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button><span id="editNote" class="edit-msg"></span>');
+    if (mode === 'live') { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn" type="button" data-edit="open">Edit</button>');
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
+    }
     fixMdLinks(page, p.folder);
     highlightCode(page);
     runKaTeX(page);
@@ -503,7 +506,7 @@
     el('content').scrollTop = 0; // hash-only navigation: the browser never resets the article container, so do it here
   }
   function showPage(slug) {
-    if (editing) dropLock(editing.root, editing.path); // leaving the page ends the edit, lock included
+    if (editing) { dropLock(editing.root, editing.path); if (editing.cm) editing.cm.toTextArea(); } // leaving the page ends the edit: lock and CodeMirror instance
     shownPage = slug; editing = null;
     el('page').classList.remove('home');
     if (!slug) { document.title = renderLanding() + ' — ' + wikiName; }
@@ -644,22 +647,47 @@
     for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
     return { dir: dir, name: parts[parts.length - 1] + '.lock' }; // Home.md -> Home.md.lock
   }
-  async function lockAge(root, path) { // ms since it was written, or null when the page is free
+  // lock file reads, writes and deletes share one queue: a 5s heartbeat whose take had just
+  // started when Save ran would otherwise re-create the lock file the save's drop has just removed
+  let lockOps = Promise.resolve();
+  function lockQueued(fn) { lockOps = lockOps.then(fn); return lockOps; }
+  function lockAge(root, path) { // ms since it was written, or null when the page is free
     // shortcut: the age compares our clock with the file's timestamp, so a machine whose clock is
     // off by more than LOCK_STALE looks stale or immortal; revisit if shared drives ever disagree.
-    try { const l = await lockOf(root, path); return Date.now() - (await (await l.dir.getFileHandle(l.name)).getFile()).lastModified; }
-    catch (e) { return null; }
+    return lockQueued(async function () {
+      try { const l = await lockOf(root, path); return Date.now() - (await (await l.dir.getFileHandle(l.name)).getFile()).lastModified; }
+      catch (e) { return null; }
+    });
   }
-  async function takeLock(root, path) { // best effort: a folder that refuses the file still edits
-    try { const l = await lockOf(root, path); const w = await (await l.dir.getFileHandle(l.name, { create: true })).createWritable(); await w.close(); }
-    catch (e) {}
+  function takeLock(root, path) { // best effort: a folder that refuses the file still edits
+    return lockQueued(async function () {
+      try { const l = await lockOf(root, path); const w = await (await l.dir.getFileHandle(l.name, { create: true })).createWritable(); await w.close(); }
+      catch (e) {}
+    });
   }
-  async function dropLock(root, path) {
-    try { const l = await lockOf(root, path); await l.dir.removeEntry(l.name); } catch (e) {}
+  function dropLock(root, path) {
+    return lockQueued(async function () {
+      try { const l = await lockOf(root, path); await l.dir.removeEntry(l.name); } catch (e) {}
+    });
   }
 
   function editMsg(text) { const m = el('editMsg'); if (m) m.textContent = text; }
-  function lockEditor(locked) { el('editText').readOnly = locked; el('editSave').disabled = locked; el('editCancel').disabled = locked; }
+  // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
+  // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
+  // autoDownloadFontAwesome stops it pulling Font Awesome off a CDN — the wiki has to work offline.
+  function makeEditor(ta) {
+    if (!window.EasyMDE) return null; // vendor/easymde.min.js missing: the plain textarea still edits
+    return new window.EasyMDE({
+      element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
+      autoDownloadFontAwesome: false,
+      toolbar: ['bold', 'italic', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo']
+    });
+  }
+  function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
+  function lockEditor(locked) {
+    if (editing && editing.cm) editing.cm.codemirror.setOption('readOnly', locked); else el('editText').readOnly = locked;
+    el('editSave').disabled = locked; el('editCancel').disabled = locked;
+  }
   async function openEditor() {
     const slug = shownPage || landingPage; const p = PAGES[slug]; const h = liveHandle;
     if (!p || !h || editing) return;
@@ -677,14 +705,16 @@
         el('editNote').textContent = 'This page is not saved as UTF-8 text, so saving it here would damage its special characters. Convert it to UTF-8 in a text editor first.';
         return;
       }
-      editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false };
+      editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false, cm: null };
       await takeLock(h, p.path);
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><textarea id="editText" spellcheck="false"></textarea>' +
         '<div class="editor-bar"><button id="editSave" class="btn" type="button" data-edit="save">Save</button>' +
         '<button id="editCancel" class="btn" type="button" data-edit="cancel">Cancel</button><span id="editMsg" class="edit-msg"></span></div></div>';
-      el('editText').value = opened.text;
-      el('editText').focus();
+      const ta = el('editText');
+      ta.value = opened.text;
+      editing.cm = makeEditor(ta);
+      if (!editing.cm) ta.focus();
       tocHtml = ''; placeToc(); markActive(); el('backlinks').innerHTML = '';
     } catch (e) {}
   }
@@ -693,7 +723,7 @@
     if (!ed || ed.saving) return;
     ed.saving = true; lockEditor(true); editMsg('Saving\u2026');
     let r;
-    try { r = await saveFile(ed.root, ed.path, el('editText').value, ed.version); }
+    try { r = await saveFile(ed.root, ed.path, draftText(ed), ed.version); }
     catch (e) { r = { error: e }; }
     if (r.ok) {
       if (loading && loading.h === ed.root) loading = null;

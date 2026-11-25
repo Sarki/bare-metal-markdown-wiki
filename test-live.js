@@ -3,14 +3,14 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'openEditor', 'saveEditor', 'cancelEditor',
-  'lockOf', 'lockAge', 'takeLock', 'dropLock', 'LOCK_STALE'].map(grab).join('\n');
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor',
+  'lockOf', 'lockAge', 'takeLock', 'dropLock', 'lockQueued', 'LOCK_STALE'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
-  const el = env.el, location = env.location, document = env.document;
+  const el = env.el, location = env.location, document = env.document, window = env.window || {};
   const showDirectoryPicker = function () { return env.pick(); };
   const imgExtRe = /\\.png$/i, wikiName = 'W', IDB = { set: async function () {} };
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '';
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', lockOps = Promise.resolve();
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
   function setMode(m) { env.label = m === 'live' ? liveHandle.name : 'bundled'; }
@@ -25,6 +25,7 @@ const factory = (0, eval)(`(function (env) {
   ${GRABBED}
   return {
     route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder,
+    get lockOps() { return lockOps; }, // a leaving tab drops its lock without waiting: tests awaiting this see the folder settled
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
     get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }
@@ -96,7 +97,7 @@ function makeApp(opts) {
     set(v) { html = v; editorEls = {}; ['editText', 'editMsg', 'editSave', 'editCancel'].forEach(function (id) { if (v.indexOf('id="' + id + '"') !== -1) editorEls[id] = mk(); }); }
   });
   const env = {
-    location: { hash: opts.hash || '' }, document: { hidden: false, title: '' }, landingPage: opts.landingPage || '', label: '', pick: null,
+    location: { hash: opts.hash || '' }, document: { hidden: false, title: '' }, landingPage: opts.landingPage || '', label: '', pick: null, window: opts.window || {},
     el(id) { if (id === 'page') return pageEl; if (/^edit(Text|Msg|Save|Cancel)$/.test(id)) return (editorEls && editorEls[id]) || null; return els[id] || (els[id] = mk()); }
   };
   const app = factory(env);
@@ -158,11 +159,11 @@ test('editing writes a lock beside the page, and saving, cancelling or leaving r
   await w.app.openEditor();
   check(bad, 'A.md.lock' in tree, 'no lock file while editing; folder: ' + Object.keys(tree));
   check(bad, !('B.md.lock' in tree), 'a lock was written for a page nobody opened');
-  w.editor().value = 'a v2'; await w.app.saveEditor();
+  w.editor().value = 'a v2'; await w.app.saveEditor(); await w.app.lockOps; await settle();
   check(bad, !('A.md.lock' in tree), 'the lock survived a save');
-  await w.app.openEditor(); w.app.cancelEditor(); await settle();
+  await w.app.openEditor(); w.app.cancelEditor(); await w.app.lockOps; await settle();
   check(bad, !('A.md.lock' in tree), 'the lock survived a cancel');
-  await w.app.openEditor(); w.go('#B'); await settle();
+  await w.app.openEditor(); w.go('#B'); await w.app.lockOps; await settle();
   check(bad, !('A.md.lock' in tree), 'the lock survived leaving the page');
   if (bad.length) throw new Error(bad.join('\n  '));
 });
@@ -178,6 +179,35 @@ test('while editing, the poll refreshes the lock and still does not re-read the 
   check(bad, tree['Home.md.lock'].modified !== before, 'the lock was not refreshed');
   check(bad, !w.screen().includes('their v2'), 'their edit replaced what is on screen');
   check(bad, w.editor() && w.editor().value === 'v1', 'the draft box changed: ' + (w.editor() ? w.editor().value : 'gone'));
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('with the vendored editor present, EasyMDE is the draft: its text is saved and leaving tears it down', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  let made = null;
+  const w = makeApp({ hash: '#Home', window: { EasyMDE: function (opts) { // stand-in for CodeMirror
+    const self = { text: opts.element.value, readOnly: null, torn: false }; made = self;
+    return { value: function () { return self.text; }, codemirror: { setOption: function (k, v) { self.readOnly = v; } }, toTextArea: function () { self.torn = true; } };
+  } } });
+  await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor();
+  check(bad, w.app.editing && w.app.editing.cm, 'the editor was not created');
+  check(bad, made && made.text === 'v1', 'the file text never reached the editor: ' + JSON.stringify(made && made.text));
+  made.text = 'from the editor'; w.editor().value = 'stale hidden textarea';
+  await w.app.saveEditor();
+  check(bad, textOf(tree['Home.md']) === 'from the editor', 'the hidden textarea was saved instead of the editor: ' + JSON.stringify(textOf(tree['Home.md'])));
+  check(bad, made.torn === true, 'the editor instance was not torn down after the save');
+  made = null;
+  await w.app.openEditor();
+  made.text = 'mine';
+  tree['Home.md'] = page('theirs'); await w.app.saveEditor(); // refused: the editor must unlock and keep the draft
+  check(bad, textOf(tree['Home.md']) === 'theirs', 'the draft was written over their version');
+  check(bad, /Someone else/.test(w.msg() || ''), 'message: ' + w.msg());
+  check(bad, made && made.readOnly === false, 'the editor stayed locked after a refused save: ' + made && made.readOnly);
+  check(bad, made && made.text === 'mine', 'their text replaced the draft: ' + JSON.stringify(made && made.text));
+  await w.app.cancelEditor(); await settle();
+  check(bad, made.torn === true, 'the editor instance was not torn down when cancelling');
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 
@@ -892,6 +922,23 @@ t('the only page is saved, then someone removes it: the next polls stop showing 
   delete tree['Home.md'];
   await w.app.pollLive(); await w.app.pollLive();
   return w.screen().startsWith('NOTFOUND') ? [] : ['the folder is empty but after two polls the screen shows: ' + w.screen()];
+});
+
+t('a 5s heartbeat whose take started just before a Save cannot re-create the lock the Save dropped', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  let releaseGet; const gate = new Promise(function (r) { releaseGet = r; }); let takes = 0;
+  const orig = f.root.getFileHandle.bind(f.root); // a slow drive: the heartbeat's lock-file step stalls before it runs
+  f.root.getFileHandle = async function (n, o) { if (n === 'Home.md.lock' && o && o.create && ++takes === 2) await gate; return orig(n, o); };
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  await w.app.openEditor(); w.editor().value = 'v2'; // take #1 lands when the editor opens
+  const tick = w.app.pollLive(); await settle();     // take #2: the heartbeat starts, then stalls
+  const s = w.app.saveEditor(); await settle();      // the save writes and drops its lock while take #2 is stalled
+  releaseGet(); await s; await tick; await settle();
+  const bad = [];
+  check(bad, textOf(tree['Home.md']) === 'v2', 'disk: ' + JSON.stringify(textOf(tree['Home.md'])));
+  check(bad, !('Home.md.lock' in tree), 'the save left a lock behind that would block the next Edit: ' + Object.keys(tree));
+  check(bad, !w.app.editing, 'still editing after the save');
+  return bad;
 });
 
 (async function () {
