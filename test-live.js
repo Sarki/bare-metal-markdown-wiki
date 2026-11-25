@@ -12,7 +12,7 @@ const factory = (0, eval)(`(function (env) {
   const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
   const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
   function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', buildReminder = null, toastTimer = null;
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', toastTimer = null;
   const setTimeout = function () { return 0; }, clearTimeout = function () {}; // the toast's 2.5s auto-hide must not keep the test process awake
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
@@ -138,14 +138,14 @@ test('baseline: an edit is saved and the saved text is shown', async function ()
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 
-test('the build reminder shows after the first save of a folder, not after every one', async function () {
+test('every save reminds about re-running the build, since only the build updates the snapshot', async function () {
   const tree = { 'A.md': page('a'), 'B.md': page('b') }; const f = fakeFolder('A', tree);
   const w = makeApp({ hash: '#A' }); await w.app.start(f.root);
   const bad = [];
   await w.app.openEditor(); w.editor().value = 'a2'; await w.app.saveEditor();
   check(bad, /build/.test(w.toastMsg() || ''), 'no reminder in the overlay after the first save: ' + JSON.stringify(w.toastMsg()));
   w.go('#B'); await w.app.openEditor(); w.editor().value = 'b2'; await w.app.saveEditor();
-  check(bad, w.toastMsg() === 'Saved.', 'the reminder nagged again on the next save: ' + JSON.stringify(w.toastMsg()));
+  check(bad, /build/.test(w.toastMsg() || ''), 'the second save stopped reminding about the build: ' + JSON.stringify(w.toastMsg()));
   check(bad, textOf(tree['A.md']) === 'a2' && textOf(tree['B.md']) === 'b2', 'disk: A=' + textOf(tree['A.md']) + ' B=' + textOf(tree['B.md']));
   if (bad.length) throw new Error(bad.join('\n  '));
 });

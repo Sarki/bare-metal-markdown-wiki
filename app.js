@@ -50,7 +50,6 @@
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let liveStamp = '';
   let editing = null;
-  let buildReminder = null;    // the folder whose pending-build note this tab has already shown
   let treeOpen = null;         // folders the user opened/closed by hand (path -> bool); survives every sidebar redraw
   let shownPage = '';
   let loading = null;
@@ -491,6 +490,8 @@
     e.className = 'mode' + (m === 'live' ? ' live' : '');
     el('refresh').classList.toggle('hidden', m !== 'live');
     el('leave').classList.toggle('hidden', m !== 'live');
+    // "Live render" (pick a folder) only belongs to bundled mode; once live, "Bundled" is its way back out
+    el('choose').classList.toggle('hidden', m === 'live' || typeof showDirectoryPicker !== 'function');
   }
 
   // ---------- routing ----------
@@ -782,15 +783,10 @@
       return;
     }
     renderTags(); showPage(shownPage);
-    // the confirmation lands in a centered overlay over the re-rendered page
-    // remind once per folder per tab, not after every save: one build covers them all, and a second
-    // reminder on the next page would be noise (a reload clears it, so a new session gets one again)
-    if (buildReminder !== ed.root) {
-      buildReminder = ed.root;
-      toast('Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.');
-    } else {
-      toast('Saved.');
-    }
+    // the confirmation lands in a centered overlay over the re-rendered page, and always reminds
+    // about the build: what Save updates is the .md file, so others only see it in the bundled
+    // snapshot after build.sh/build.bat runs — everyone who saves needs to know this, not just once
+    toast('Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.');
   }
   async function checkEditedPage() {
     const ed = editing;
@@ -971,8 +967,7 @@
       if (!location.hash.slice(1) && !editing) route();
     });
 
-    const canPick = typeof showDirectoryPicker === 'function';
-    el('choose').classList.toggle('hidden', !canPick); // hidden by default; revealed only where the File System Access API exists
+    // the "Live render" button's visibility is handled by setMode (shown in bundled mode where the File System Access API exists)
 
     // resizable sidebar: drag the strip, width clamped 140–480 and remembered
     const setSidebarW = function (w) { document.documentElement.style.setProperty('--sidebar-w', w + 'px'); };

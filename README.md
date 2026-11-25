@@ -77,9 +77,9 @@ no network access.
 
 Instead of rebuilding, you can point the wiki directly at a folder on disk.
 
-- Click **Live render** in the top bar (only shown in browsers with the
+- Click **Live render** in the top bar (shown only in browsers with the
   [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API) —
-  Chrome/Edge)
+  Chrome/Edge — and hidden while live render is already on)
 - Pick your Markdown folder **once**; the choice is remembered (IndexedDB) and
   reused on every later open. It is remembered **per wiki copy** — the memory
   is keyed by where that `index.html` sits, so two wikis on one machine never
@@ -124,8 +124,8 @@ Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and
 picks the same folder. Each open wiki checks the folder every 5 seconds and
 shows changes made by others (it pauses while the tab is in the background).
-While you are editing, the **Live render** button does nothing; save or cancel
-first to switch folders.
+While you are editing, you cannot switch folders (the **Live render** /
+**Bundled** switch is disabled); save or cancel first.
 
 - While you edit, the wiki checks every 5 seconds whether someone else saved
   the same page. If they did, a banner says so and offers **Merge their changes
@@ -160,11 +160,11 @@ first to switch folders.
   saved over here either.
 - A file with Windows line endings keeps them when saved.
 - Leaving the page while editing discards unsaved changes.
-- After a save, a message pops up in the middle of the screen confirming it,
-  and on the first save of a folder also reminds you to re-run the build: what
-  **Save** updates is the `.md` file, and wikis opened without live render read
-  the bundled `data.js` snapshot, which only changes when the build script runs.
-  That reminder shows once per folder per tab — one build covers every save.
+- After every save, a message pops up in the middle of the screen confirming it
+  and reminding you to re-run the build: what **Save** updates is the `.md`
+  file, and wikis opened without live render read the bundled `data.js`
+  snapshot, which only changes when the build script runs — so whoever saves
+  needs to know it, every time.
 - Firefox and Safari cannot write to a folder, so they get no Edit button and
   only see the bundled `data.js` snapshot, which does not include edits until
   someone re-runs the build.
