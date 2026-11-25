@@ -2,10 +2,10 @@
 
 
 const grab = require('./test-grab.js');
-const api = (0, eval)('(function () { const imgExtRe = /\\.png$/i;' + ['fileAt', 'readForEdit', 'saveFile', 'folderStamp', 'lockOf', 'lockAge', 'takeLock', 'dropLock'].map(grab).join('\n') +
-  '\nreturn { readForEdit: readForEdit, saveFile: saveFile, folderStamp: folderStamp, lockAge: lockAge, takeLock: takeLock, dropLock: dropLock }; })()');
+const api = (0, eval)('(function () { const imgExtRe = /\\.png$/i;' + ['fileAt', 'versionOf', 'readForEdit', 'saveFile', 'folderStamp', 'splitLines', 'matchLines', 'merge3'].map(grab).join('\n') +
+  '\nreturn { readForEdit: readForEdit, saveFile: saveFile, folderStamp: folderStamp, merge3: merge3 }; })()');
 
-let clock = Date.now(); // real timestamps, so lock ages measured against Date.now() mean something
+let clock = Date.now();
 function fakeFolder(tree) {
   function dir(node) {
     return {
@@ -34,6 +34,57 @@ const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 function eq(got, want, what) { if (got !== want) throw new Error(what + ': expected ' + JSON.stringify(want) + ', got ' + JSON.stringify(got)); }
 
+function merged(parts) { return parts.map(function (p) { return p.conflict ? '<' + p.theirs + '|' + p.mine + '>' : p.text; }).join(''); }
+
+test('merges their change and mine when they touch different lines', function () {
+  const base = 'title\nintro\nmiddle\nend\n';
+  const mine = 'title\nintro, rewritten by me\nmiddle\nend\n';
+  const theirs = 'title\nintro\nmiddle\nend\nnew closing line\n';
+  eq(merged(api.merge3(base, mine, theirs)), 'title\nintro, rewritten by me\nmiddle\nend\nnew closing line\n', 'merged text');
+});
+
+test('reports a conflict when we both changed the same line, and merges the rest', function () {
+  const parts = api.merge3('a\nb\nc\nd\n', 'a\nb\nc mine\nd\n', 'A\nb\nc theirs\nd\n');
+  eq(merged(parts), 'A\nb\n<c theirs\n|c mine\n>d\n', 'merged text with the conflict marked');
+});
+
+test('changes on neighbouring lines count as one overlap, as in git', function () {
+  eq(merged(api.merge3('a\nb\nc\n', 'a mine\nb\nc\n', 'a\nb theirs\nc\n')), '<a\nb theirs\n|a mine\nb\n>c\n', 'merged text');
+});
+
+test('the same change made by both of us is not a conflict', function () {
+  eq(merged(api.merge3('a\nb\n', 'a\nB\n', 'a\nB\n')), 'a\nB\n', 'merged text');
+});
+
+test('both adding different lines at the same place is a conflict', function () {
+  eq(merged(api.merge3('a\nz\n', 'a\nmine\nz\n', 'a\ntheirs\nz\n')), 'a\n<theirs\n|mine\n>z\n', 'merged text');
+});
+
+test('a line they deleted stays deleted when I did not touch it', function () {
+  eq(merged(api.merge3('a\nb\nc\nd\n', 'a\nb\nc\nd mine\n', 'a\nc\nd\n')), 'a\nc\nd mine\n', 'merged text');
+});
+
+test('a last line without a newline merges like any other', function () {
+  eq(merged(api.merge3('a\nb\nc', 'a mine\nb\nc', 'a\nb\nc theirs')), 'a mine\nb\nc theirs', 'merged text');
+});
+
+test('merges into an empty page and from an empty page', function () {
+  eq(merged(api.merge3('', 'mine\n', '')), 'mine\n', 'I wrote a new page');
+  eq(merged(api.merge3('x\n', 'x\n', '')), '', 'they emptied the page');
+});
+
+test('lines we both changed the same way stay out of the clash', function () {
+  eq(merged(api.merge3('Old title\nold body\n', 'New title\nmine\n', 'New title\ntheirs\n')), 'New title\n<theirs\n|mine\n>', 'merged text');
+});
+
+test('both adding a line to a page with no final newline clashes only on the added lines', function () {
+  eq(merged(api.merge3('l1\nl2\nl3\nl4\nl5', 'l1\nl2\nl3\nl4\nl5\nmine', 'l1\nl2\nl3\nl4\nl5\nl6')), 'l1\nl2\nl3\nl4\nl5\n<l6|mine>', 'merged text');
+});
+
+test('an edit at the top merges with their line added to a page with no final newline', function () {
+  eq(merged(api.merge3('l1\nl2\nl3\nl4\nl5', 'L1\nl2\nl3\nl4\nl5', 'l1\nl2\nl3\nl4\nl5\nl6')), 'L1\nl2\nl3\nl4\nl5\nl6', 'merged text');
+});
+
 test('saves an edit into a subfolder file', async function () {
   const tree = { Guides: { 'Basics.md': page('old') } };
   const root = fakeFolder(tree);
@@ -42,6 +93,38 @@ test('saves an edit into a subfolder file', async function () {
   const r = await api.saveFile(root, 'Guides/Basics.md', 'new text', opened.version);
   eq(r.ok, true, 'saved');
   eq(tree.Guides['Basics.md'].text, 'new text', 'file on disk');
+});
+
+test('merges my edit into a file someone else changed meanwhile on other lines', async function () {
+  const tree = { 'Home.md': page('title\nintro\nmiddle\nend\n') };
+  const root = fakeFolder(tree);
+  const opened = await api.readForEdit(root, 'Home.md');
+  tree['Home.md'] = page('title\nintro\nmiddle\nend\ntheir line\n');
+  const r = await api.saveFile(root, 'Home.md', 'title\nmy intro\nmiddle\nend\n', opened.version);
+  eq(r.ok, true, 'saved');
+  eq(tree['Home.md'].text, 'title\nmy intro\nmiddle\nend\ntheir line\n', 'file on disk');
+  eq(r.version.raw, tree['Home.md'].text, 'version kept for the next save');
+});
+
+test('merging keeps the Windows line endings of their version', async function () {
+  const tree = { 'Home.md': page('a\r\nb\r\nc\r\n') };
+  const root = fakeFolder(tree);
+  const opened = await api.readForEdit(root, 'Home.md');
+  tree['Home.md'] = page('a\r\nb\r\nc theirs\r\n');
+  await api.saveFile(root, 'Home.md', 'a mine\nb\nc\n', opened.version);
+  eq(tree['Home.md'].text, 'a mine\r\nb\r\nc theirs\r\n', 'file on disk');
+});
+
+test('a clash on the same lines is not saved and comes back for me to resolve', async function () {
+  const tree = { 'Home.md': page('a\nb\nc\n') };
+  const root = fakeFolder(tree);
+  const opened = await api.readForEdit(root, 'Home.md');
+  tree['Home.md'] = page('a\nb theirs\nc\n');
+  const r = await api.saveFile(root, 'Home.md', 'a\nb mine\nc\n', opened.version);
+  eq(r.ok, false, 'saved');
+  eq(tree['Home.md'].text, 'a\nb theirs\nc\n', 'file on disk');
+  eq(merged(r.parts), 'a\n<b theirs\n|b mine\n>c\n', 'the clash handed back');
+  eq(r.version.raw, 'a\nb theirs\nc\n', 'their version, to resolve against');
 });
 
 test('refuses to save over a file someone else changed meanwhile', async function () {
@@ -111,35 +194,12 @@ test('folder stamp changes when a page is added or removed', async function () {
   eq(await api.folderStamp(root), before, 'stamp after removing the page again');
 });
 
-test('folder stamp ignores the browser temp files and lock files written beside a page', async function () {
+test('folder stamp ignores the browser temp files written beside a page', async function () {
   const tree = { 'Home.md': page('y') };
   const root = fakeFolder(tree);
   const before = await api.folderStamp(root);
   tree['Home.md.crswap'] = page('partial');
-  tree['Home.md.lock'] = page('');
-  eq(await api.folderStamp(root), before, 'stamp with a .crswap and a .lock file present');
-});
-
-test('a fresh lock says the page is taken, a dropped one says it is free', async function () {
-  const tree = { Guides: { 'Basics.md': page('x') } };
-  const root = fakeFolder(tree);
-  eq(await api.lockAge(root, 'Guides/Basics.md'), null, 'a page nobody edits');
-  await api.takeLock(root, 'Guides/Basics.md');
-  const age = await api.lockAge(root, 'Guides/Basics.md');
-  if (age === null) throw new Error('the lock file was not found');
-  if (age > 20000) throw new Error('a lock written just now reads as ' + age + 'ms old');
-  eq(tree.Guides['Basics.md'].text, 'x', 'the page itself is untouched');
-  await api.dropLock(root, 'Guides/Basics.md');
-  eq(await api.lockAge(root, 'Guides/Basics.md'), null, 'the lock after dropping it');
-  eq(Object.keys(tree.Guides).join(','), 'Basics.md', 'the lock file is gone from the folder');
-});
-
-test('a lock left by a dead tab is old enough to edit over', async function () {
-  const tree = { 'Home.md': page('y') };
-  const root = fakeFolder(tree);
-  tree['Home.md.lock'] = { text: '', modified: Date.now() - 60000 };
-  const age = await api.lockAge(root, 'Home.md');
-  if (age === null || age < 20000) throw new Error('a minute-old lock read as ' + age);
+  eq(await api.folderStamp(root), before, 'stamp with a .crswap file present');
 });
 
 (async function () {
