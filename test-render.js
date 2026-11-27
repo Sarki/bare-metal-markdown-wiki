@@ -109,5 +109,17 @@ md3.use(MditExtras.badges);
 const o3 = md3.render('@{wip} @{WIP} @{Wip thing}');
 if ((o3.match(/badge--yellow/g) || []).length === 3) pass++;
 else { fail++; console.error('FAIL: badgeColors case-insensitive\n  out:  ' + o3); }
-console.log('test-render: ' + pass + '/' + (cases.length + 2) + ' passed');
+// editor guard: every snippet the WYSIWYG toolbar inserts must actually render as its feature —
+// keeps app.js wikiSnippets() in sync with this renderer's syntax
+const snippetGroups = (0, eval)('(function () { ' + require('./test-grab.js')('wikiSnippets') + '; return { wikiSnippets: wikiSnippets }; })()').wikiSnippets();
+let snipN = 0;
+for (const g of snippetGroups) for (const it of g.items) {
+  snipN++;
+  const input = it.b + 'x' + it.a; // 'x' = whatever the author types at the caret
+  let out;
+  try { out = md.render(input); } catch (e) { out = 'RENDER THREW: ' + e.message; }
+  if (out.includes(it.then)) pass++;
+  else { fail++; console.error('FAIL: editor snippet ' + it.name + '\n  in:   ' + JSON.stringify(input) + '\n  out:  ' + out + '\n  want: ' + it.then); }
+}
+console.log('test-render: ' + pass + '/' + (cases.length + 2 + snipN) + ' passed');
 process.exit(fail ? 1 : 0);

@@ -116,12 +116,17 @@ edited from this copy.
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
 and a small toolbar covers bold, italic, heading, link, quote, code, lists,
-table and undo/redo. Its buttons show words instead of icons because the wiki
+table and undo/redo, plus dropdowns for this wiki's own formats: **alert**
+(`> [!NOTE]` and friends), **fold** (foldable `::: fold` sections and named
+`::: blocks`), **tabs** (a ready-made two-panel `::: tabs` scaffold) and
+**inline** (badge and button-link syntax) — each inserts the snippet at the
+caret, wrapping whatever text you had selected. Its buttons show words instead
+of icons because the wiki
 ships no icon font, and there is no preview button — EasyMDE's own preview uses
 a different Markdown engine, so `[[links]]` and `:::` boxes would come out
 wrong there. Nothing is fetched from the internet. The **Save** and **Cancel**
 buttons stay pinned to the bottom of the window while you scroll a long file,
-and the breadcrumb line carrying **Edit** stays pinned at the top.
+and so does the formatting toolbar, right under the top bar.
 
 Put the wiki on a shared network drive and several people can work on it with
 no server: everyone opens `index.html` from the drive in Chrome or Edge and

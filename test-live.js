@@ -3,7 +3,7 @@
 
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
-  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
+  'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
   'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
@@ -1181,6 +1181,27 @@ t('the only page is saved, then someone removes it: the next polls stop showing 
   delete tree['Home.md'];
   await w.app.pollLive(); await w.app.pollLive();
   return w.screen().startsWith('NOTFOUND') ? [] : ['the folder is empty but after two polls the screen shows: ' + w.screen()];
+});
+
+t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its snippet with the caret inside', async function () {
+  const env = { EasyMDE: function (o) { env.opts = o; return {}; } };
+  const api = (0, eval)('(function (window) { ' + ['wikiSnippets', 'insertSnip', 'wikiButtons', 'makeEditor'].map(grab).join('\n') + '; return { makeEditor: makeEditor }; })')(env);
+  api.makeEditor({});
+  const wiki = ((env.opts || {}).toolbar || []).filter(function (b) { return typeof b === 'object'; });
+  const bad = [];
+  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,tabs,inline', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
+  for (const g of wiki) {
+    const items = g.children || [g];
+    check(bad, items.length > 1 || !g.children, g.name + ': a one-item dropdown renders as a plain button, got both');
+    for (const it of items) {
+      let written = null, caret = null;
+      const cm = { getSelection: function () { return 'MINE'; }, getCursor: function () { return 4; }, indexFromPos: function (p) { return p; }, posFromIndex: function (i) { return i; }, setCursor: function (i) { caret = i; }, replaceSelection: function (s) { written = s; }, focus: function () {} };
+      it.action({ codemirror: cm });
+      check(bad, written && written.indexOf('MINE') > 0, g.name + '/' + it.name + ' did not wrap the selection: ' + JSON.stringify(written));
+      check(bad, caret === 4 + (written || '').indexOf('MINE') + 4, g.name + '/' + it.name + ' left the caret at ' + caret);
+    }
+  }
+  return bad;
 });
 
 (async function () {

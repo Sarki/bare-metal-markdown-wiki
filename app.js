@@ -724,12 +724,47 @@
   // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
   // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
   // autoDownloadFontAwesome stops it pulling Font Awesome off a CDN — the wiki has to work offline.
+  function wikiSnippets() { // what the wiki-only toolbar buttons insert: b + caret + a. The leading blank lines break out of the current block so the syntax renders even mid-paragraph; test-render.js checks each one really renders (the "then" marker)
+    return [
+      { name: 'alert', title: 'Callout box', items: [
+        { name: 'note', title: 'Note', b: '\n\n> [!NOTE]\n> ', a: '\n', then: 'markdown-alert-note' },
+        { name: 'tip', title: 'Tip', b: '\n\n> [!TIP]\n> ', a: '\n', then: 'markdown-alert-tip' },
+        { name: 'important', title: 'Important', b: '\n\n> [!IMPORTANT]\n> ', a: '\n', then: 'markdown-alert-important' },
+        { name: 'warning', title: 'Warning', b: '\n\n> [!WARNING]\n> ', a: '\n', then: 'markdown-alert-warning' },
+        { name: 'caution', title: 'Caution', b: '\n\n> [!CAUTION]\n> ', a: '\n', then: 'markdown-alert-caution' },
+      ] },
+      { name: 'fold', title: 'Foldable or named block', items: [
+        { name: 'fold', title: 'Foldable section (starts closed)', b: '\n\n::: fold Title\n', a: '\n\n:::\n', then: '<details class="fold">' },
+        { name: 'open', title: 'Foldable section (starts open)', b: '\n\n::: fold! Title\n', a: '\n\n:::\n', then: '<details class="fold" open' },
+        { name: 'block', title: 'Named block', b: '\n\n::: name\n', a: '\n\n:::\n', then: 'class="container name"' },
+      ] },
+      { name: 'tabs', title: 'Tabbed panels', items: [
+        { name: 'tabs', title: 'Tabbed panels', b: '\n\n::: tabs\n::: tab: First\n', a: '\n:::\n::: tab: Second\n\n:::\n:::\n', then: 'class="container tabs"' },
+      ] },
+      { name: 'inline', title: 'Badge or button link', items: [
+        { name: 'badge', title: 'Badge pill', b: '@{', a: '}', then: 'class="badge"' },
+        { name: 'button', title: 'Button link', b: '@[', a: '](url)', then: 'class="btn"' },
+      ] },
+    ];
+  }
+  function insertSnip(cm, snip) {
+    const sel = cm.getSelection(), at = cm.indexFromPos(cm.getCursor('from'));
+    cm.replaceSelection(snip.b + sel + snip.a); // selected text ends up wrapped inside the snippet
+    cm.setCursor(cm.posFromIndex(at + snip.b.length + sel.length));
+    cm.focus();
+  }
+  function wikiButtons() { // EasyMDE's own custom-button + dropdown-group config, so vendor/easymde.min.js stays unpatched and swappable
+    return wikiSnippets().map(function (g) {
+      const kids = g.items.map(function (it) { return { name: it.name, title: it.title, action: function (ed) { insertSnip(ed.codemirror, it); } }; });
+      return kids.length === 1 ? kids[0] : { name: g.name, title: g.title, children: kids };
+    });
+  }
   function makeEditor(ta) {
     if (!window.EasyMDE) return null; // vendor/easymde.min.js missing: the plain textarea still edits
     return new window.EasyMDE({
       element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
       autoDownloadFontAwesome: false,
-      toolbar: ['bold', 'italic', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo']
+      toolbar: ['bold', 'italic', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo', '|'].concat(wikiButtons())
     });
   }
   function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
