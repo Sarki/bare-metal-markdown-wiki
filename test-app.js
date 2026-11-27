@@ -13,7 +13,7 @@ const grab = require('./test-grab.js');
 const STEMS = {};
 global.STEM = {}; global.PAGES = {};
 (0, eval)([grab('escapeHtml'), grab('markHits'), grab('resolveSlug'), grab('outsideCode'), grab('WIKI_LINK_RE'), grab('normalizeParts'), grab('absPath'), grab('extRe'),
-           grab('wikiLinks'), grab('withFootnotes'), grab('isSearchShortcut'), grab('usesDarkScheme'), grab('nextTheme')].join('\n') + '\n;global.nextTheme=nextTheme;global.isSearchShortcut=isSearchShortcut;global.usesDarkScheme=usesDarkScheme;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;global.extRe=extRe;global.markHits=markHits;');
+           grab('wikiLinks'), grab('withFootnotes'), grab('isSearchShortcut'), grab('usesDarkScheme'), grab('nextTheme'), grab('uiDict'), grab('tr')].join('\n') + '\n;global.nextTheme=nextTheme;global.isSearchShortcut=isSearchShortcut;global.usesDarkScheme=usesDarkScheme;global.withFootnotes=withFootnotes;global.wikiLinks=wikiLinks;global.absPath=absPath;global.extRe=extRe;global.markHits=markHits;global.tr=tr;');
 ['Home', 'Guides/Basics', 'Guides/Nope'].forEach(function (s) {
   global.PAGES[s] = { slug: s };
   const k = s.split('/').pop().toLowerCase();
@@ -104,6 +104,18 @@ for (const [from, want] of themeCases) {
   const got = nextTheme(from);
   if (got !== want) { bad++; console.log('FAIL: nextTheme ' + from + ': got ' + got + ', want ' + want); }
 }
-const total = themeCases.length + schemeCases.length + cases.length + pathCases.length + extCases.length + markCases.length + keyCases.length;
+const i18nCases = [ // the interface dictionary: language choice, fallbacks, config override
+  ['browser fr, no config = fr', function () { global.WIKI = {}; Object.defineProperty(global, 'navigator', { value: { language: 'fr-FR' }, configurable: true }); delete tr.lang; return tr('save') === 'Enregistrer' && tr('langCode') === 'fr'; }],
+  ['browser de (no pack) falls back to en', function () { global.WIKI = {}; Object.defineProperty(global, 'navigator', { value: { language: 'de' }, configurable: true }); delete tr.lang; return tr('save') === 'Save'; }],
+  ['config language beats the browser', function () { global.WIKI = { language: 'en' }; Object.defineProperty(global, 'navigator', { value: { language: 'fr' }, configurable: true }); delete tr.lang; return tr('save') === 'Save'; }],
+  ['unknown config language falls back to en', function () { global.WIKI = { language: 'zz' }; delete tr.lang; return tr('save') === 'Save'; }],
+  ['config ui override wins', function () { global.WIKI = { language: 'fr', ui: { save: 'Stocker' } }; delete tr.lang; return tr('save') === 'Stocker' && tr('cancel') === 'Annuler'; }],
+  ['the fr pack covers every en key', function () { const d = uiDict(); return Object.keys(d.en).every(function (k) { return k in d.fr; }); }],
+];
+for (const [name, fn] of i18nCases) {
+  if (!fn()) { bad++; console.log('FAIL: i18n ' + name); }
+}
+global.WIKI = {}; delete tr.lang;
+const total = themeCases.length + schemeCases.length + cases.length + pathCases.length + extCases.length + markCases.length + keyCases.length + i18nCases.length;
 if (bad) { console.log(bad + ' failed'); process.exit(1); }
 console.log('test-app: ' + total + '/' + total + ' passed');

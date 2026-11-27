@@ -17,6 +17,8 @@
    brandIcon   : icon before the wiki name in the topbar — left out = built-in logo; any emoji/character replaces it; '' hides it
    favicon     : tab icon — image file next to index.html, URL, or data: URI; '' = the built-in logo
    expandOnPrint : open every ::: fold section when printing (false keeps them closed)
+   language    : interface language — 'en' or 'fr' are built in; '' = your browser's language if a pack exists, else 'en'
+   ui          : replace individual interface strings (any language, even one with no pack); wins over language
    badgeColors : which first-words color inline @{ badges }
    landingPage : page opened on load (slug like 'Guides/Basics'); '' = generated home
    sidebarOrder: how the sidebar lists pages vs folders — 'files' | 'folders' | 'alpha' */
@@ -36,6 +38,8 @@ window.WIKI = {
   // brandIcon: '📚', // left out = the built-in logo; any emoji/character replaces it; '' hides it; for an image, go to user.css
   favicon: '', // browser tab icon: image file next to index.html (keep it — it's yours, like this file), any URL, or a data: URI; '' = the built-in logo
   expandOnPrint: true, // printing opens every fold section so nothing is hidden on paper; false keeps folds as you left them
+  language: '', // 'en' or 'fr' built in; '' = your browser's language if a pack exists, else 'en'
+  // ui: { save: 'Stocker', preview: 'Aperçu' }, // replace single strings (uncomment, any key); wins over language. en/fr built-in keys are listed in app.js uiDict()
   // first word of a badge → its color, matched case-insensitively; unknown words stay the gray pill.
   // your own color: give the words plus a color, and the pill CSS is made for you (rendered badges and the editor menu):
   // badgeColors: { ...above..., mauve: { words: ['plum', 'lilac'], color: '#a371f7' } }

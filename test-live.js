@@ -4,7 +4,7 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
-  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor'].map(grab).join('\n');
+  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
@@ -1203,7 +1203,7 @@ t('the only page is saved, then someone removes it: the next polls stop showing 
 
 t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its snippet with the caret inside', async function () {
   const env = { EasyMDE: function (o) { env.opts = o; return {}; }, MditExtras: { badgeColors: function () { return { mauve: ['plum'] }; }, buttonColors: ['red'] } };
-  const api = (0, eval)('(function (window) { ' + ['wikiSnippets', 'insertSnip', 'wikiButtons', 'makeEditor'].map(grab).join('\n') + '; return { makeEditor: makeEditor }; })')(env);
+  const api = (0, eval)('(function (window) { ' + ['wikiSnippets', 'insertSnip', 'wikiButtons', 'makeEditor', 'translateToolbar', 'uiDict', 'tr'].map(grab).join('\n') + '; return { makeEditor: makeEditor }; })')(env);
   api.makeEditor({});
   const wiki = ((env.opts || {}).toolbar || []).filter(function (b) { return typeof b === 'object' && b.name !== 'wiki-break'; }); // wiki-break is the invisible row break, not a button
   const bad = [];

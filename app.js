@@ -81,6 +81,89 @@
   if (typeof WIKI.favicon === 'string' && WIKI.favicon) el('favicon').href = WIKI.favicon; // custom tab icon: file next to index.html, any URL, or a data: URI
   const expandOnPrint = WIKI.expandOnPrint !== false; // open every fold in the article right before printing, restore after
 
+  // ---------- interface language ----------
+  function uiDict() { // every word the app itself shows; en is the fallback for keys a language is missing. Languages other than en/fr: add yours through config.js `ui`
+    return {
+      en: {
+        langCode: 'en',
+        menu: 'Menu', search: 'Search pages…', clearSearch: 'Clear search',
+        modeTitle: 'Where pages come from: bundled snapshot (data.js) or a connected live folder',
+        themeTitle: 'Theme: %1 (click for %2)', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
+        refreshTitle: 'Re-read the connected folder now (live mode)',
+        btnBundled: 'Bundled', btnBundledTitle: 'Leave live render and go back to the bundled data.js snapshot. This wiki then forgets the folder until you pick one again.',
+        btnLive: 'Live render', btnLiveTitle: 'Point the wiki at your markdown folder for live rendering (one-time, remembered).',
+        resizer: 'Drag to resize the sidebar',
+        linkedFrom: 'Linked from', notFound: 'Not found', noPageAt: 'No page at',
+        home: 'Home', tagPrefix: 'Tagged: ', noPages: 'No pages yet. Add <code>.md</code> files to <code>articles/</code> and run the build, or use',
+        emptyTree: 'No pages.', loadingFolder: 'Reading your folder\u2026 this can take a while on a network drive.',
+        copyCode: 'Copy code snippet', noResults: '\u2014 no results \u2014',
+        matchesNote: '%1 matches &mdash; showing the first %2. Edit <code>maxResults</code> in config.js to see more.',
+        edit: 'Edit',
+        utf8Note: 'This page is not saved as UTF-8 text, so saving it here would damage its special characters. Convert it to UTF-8 in a text editor first.',
+        notUtf8Error: 'someone saved this page in a format other than UTF-8 text, so saving here would damage its special characters. Your text is still in the box; convert the file to UTF-8 in a text editor, then save again.',
+        preview: 'Preview', save: 'Save', cancel: 'Cancel', previewHint: 'Click outside or press Esc to close.',
+        saving: 'Saving\u2026', couldNotSave: 'Could not save: ',
+        savedToast: 'Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.',
+        conflictOnSave: 'Someone else saved this page while you were editing, on the same lines as you. Nothing was saved: choose what to keep above, then Save again.',
+        someoneSaved: 'Someone else saved this page while you were editing.', mergeBtn: 'Merge their changes into mine', changesBtn: 'Show what changed',
+        conflictsIntro: 'Your edit and theirs changed the same lines. For each place below, choose what to keep; the text box unlocks once every one is decided.',
+        theirs: 'Theirs', yours: 'Yours', keepMine: 'Keep mine', keepTheirs: 'Keep theirs', keepBoth: 'Keep both',
+        mergedMsg: 'Their changes are merged into your text. Check it, then Save.',
+        promptLink: 'Type link text', promptUrl: 'Enter the link URL',
+        tbBold: 'Bold', tbItalic: 'Italic', tbStrike: 'Strikethrough', tbHeading: 'Heading', tbLink: 'Link', tbQuote: 'Quote', tbCode: 'Code',
+        tbUL: 'Generic List', tbOL: 'Numbered List', tbTable: 'Insert Table', tbUndo: 'Undo', tbRedo: 'Redo'
+      },
+      fr: {
+        langCode: 'fr',
+        menu: 'Menu', search: 'Rechercher une page\u2026', clearSearch: 'Effacer la recherche',
+        modeTitle: 'D\u2019où viennent les pages : instantan\u00e9 embarqu\u00e9 (data.js) ou dossier en direct connect\u00e9',
+        themeTitle: 'Th\u00e8me : %1 (cliquer pour %2)', themeSystem: 'Syst\u00e8me', themeLight: 'Clair', themeDark: 'Sombre',
+        refreshTitle: 'Relire le dossier connect\u00e9 maintenant (mode en direct)',
+        btnBundled: 'Embarqu\u00e9', btnBundledTitle: 'Quitter le rendu en direct et revenir \u00e0 l\u2019instantan\u00e9 data.js. Le wiki oublie alors le dossier jusqu\u2019\u00e0 ce que vous en re-choisissiez un.',
+        btnLive: 'Rendu en direct', btnLiveTitle: 'Pointer le wiki vers votre dossier markdown pour le rendu en direct (une seule fois, m\u00e9moris\u00e9).',
+        resizer: 'Faire glisser pour redimensionner la barre lat\u00e9rale',
+        linkedFrom: 'Li\u00e9 depuis', notFound: 'Introuvable', noPageAt: 'Aucune page \u00e0',
+        home: 'Accueil', tagPrefix: 'Tag\u00e9 : ', noPages: 'Aucune page pour l\u2019instant. Ajoutez des fichiers <code>.md</code> dans <code>articles/</code> et lancez le build, ou utilisez',
+        emptyTree: 'Aucune page.', loadingFolder: 'Lecture de votre dossier\u2026 cela peut \u00eatre long sur un lecteur r\u00e9seau.',
+        copyCode: 'Copier le code', noResults: '\u2014 aucun r\u00e9sultat \u2014',
+        matchesNote: '%1 r\u00e9sultats \u2014 voici les %2 premiers. Modifiez <code>maxResults</code> dans config.js pour en voir plus.',
+        edit: 'Modifier',
+        utf8Note: 'Cette page n\u2019est pas encod\u00e9e en UTF-8 : la sauvegarder ici ab\u00eemerait ses caract\u00e8res sp\u00e9ciaux. Convertissez-la d\u2019abord en UTF-8 dans un \u00e9diteur de texte.',
+        notUtf8Error: 'quelqu\u2019un a sauvegard\u00e9 cette page dans un format autre que du texte UTF-8 : la sauvegarder ici ab\u00eemerait ses caract\u00e8res sp\u00e9ciaux. Votre texte est toujours dans la zone de saisie ; convertissez le fichier en UTF-8 dans un \u00e9diteur de texte, puis enregistrez \u00e0 nouveau.',
+        preview: 'Aper\u00e7u', save: 'Enregistrer', cancel: 'Annuler', previewHint: 'Cliquez hors de l\u2019aper\u00e7u ou appuyez sur \u00c9chap pour fermer.',
+        saving: 'Enregistrement\u2026', couldNotSave: 'Enregistrement impossible : ',
+        savedToast: 'Enregistr\u00e9. Relancez le build (build.sh, ou build.bat sous Windows) pour rafra\u00eechir l\u2019instantan\u00e9 embarqu\u00e9, afin que les wikis ouverts sans rendu en direct voient cette modification.',
+        conflictOnSave: 'Quelqu\u2019un d\u2019autre a sauvegard\u00e9 cette page pendant votre \u00e9dition, sur les m\u00eames lignes. Rien n\u2019a \u00e9t\u00e9 sauvegard\u00e9 : choisissez quoi garder ci-dessus, puis enregistrez \u00e0 nouveau.',
+        someoneSaved: 'Quelqu\u2019un d\u2019autre a sauvegard\u00e9 cette page pendant votre \u00e9dition.', mergeBtn: 'Fusionner ses changements dans les miens', changesBtn: 'Voir ce qui a chang\u00e9',
+        conflictsIntro: 'Votre \u00e9dition et la sienne ont modifi\u00e9 les m\u00eames lignes. Pour chaque endroit ci-dessous, choisissez quoi garder ; la zone de texte se d\u00e9verrouille une fois tous les choix faits.',
+        theirs: 'La sienne', yours: 'La v\u00f4tre', keepMine: 'Garder la mienne', keepTheirs: 'Garder la sienne', keepBoth: 'Garder les deux',
+        mergedMsg: 'Ses changements sont fusionn\u00e9s dans votre texte. V\u00e9rifiez-le, puis enregistrez.',
+        promptLink: 'Texte du lien', promptUrl: 'Adresse du lien',
+        tbBold: 'Gras', tbItalic: 'Italique', tbStrike: 'Barr\u00e9', tbHeading: 'Titre', tbLink: 'Lien', tbQuote: 'Citation', tbCode: 'Code',
+        tbUL: 'Liste \u00e0 puces', tbOL: 'Liste num\u00e9rot\u00e9e', tbTable: 'Ins\u00e9rer un tableau', tbUndo: 'Annuler', tbRedo: '\u00c9tablir'
+      }
+    };
+  }
+  function tr(k) { // the word for key k: config.js `ui` overrides anything; the language is config.js `language`, else the browser's, else en
+    if (!tr.d) tr.d = uiDict();
+    if (!tr.lang) {
+      var w = window.WIKI || {};
+      var l = ((w.language || (window.navigator && window.navigator.language) || '') + '').toLowerCase().slice(0, 2); // '' = auto: the browser's language, if a pack exists for it
+      tr.lang = tr.d[l] ? l : 'en';
+    }
+    var o = (window.WIKI || {}).ui || {};
+    if (k in o) return o[k];
+    return k in tr.d[tr.lang] ? tr.d[tr.lang][k] : tr.d.en[k];
+  }
+  function translateToolbar(cm) { // EasyMDE gives its built-in toolbar buttons their name as a CSS class: swap its English hover titles for ours (the wiki's own buttons already carry their titles)
+    var T = { bold: 'tbBold', italic: 'tbItalic', strikethrough: 'tbStrike', heading: 'tbHeading', link: 'tbLink', quote: 'tbQuote', code: 'tbCode', 'unordered-list': 'tbUL', 'ordered-list': 'tbOL', table: 'tbTable', undo: 'tbUndo', redo: 'tbRedo' };
+    if (!cm.gui) return; // the test stubs hand back a bare object
+    cm.gui.toolbar.querySelectorAll('button').forEach(function (b) {
+      if (!b.classList) return; // the test stubs hand back bare {disabled} objects
+      for (var cls in T) if (b.classList.contains(cls)) { b.title = tr(T[cls]); b.setAttribute('aria-label', tr(T[cls])); break; }
+    });
+  }
+
   // ---------- frontmatter ----------
   function parseFrontmatter(src) {
     const tags = []; let title = ''; let body = src;
@@ -277,7 +360,7 @@
     pageNode.querySelectorAll('pre').forEach(function (pre) {
       if (pre.querySelector('.copybtn')) return;
       const b = document.createElement('button');
-      b.className = 'copybtn'; b.type = 'button'; b.title = 'Copy code snippet'; b.setAttribute('aria-label', 'Copy code snippet');
+      b.className = 'copybtn'; b.type = 'button'; b.title = tr('copyCode'); b.setAttribute('aria-label', tr('copyCode'));
       pre.appendChild(b);
     });
   }
@@ -325,7 +408,7 @@
     const box = el('backlinks');
     const from = Object.keys(PAGES).filter(function (s) { return s !== slug && PAGES[s].links.has(slug); });
     if (!from.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<h3>Linked from</h3>' + from.map(function (s) {
+    box.innerHTML = '<h3>' + tr('linkedFrom') + '</h3>' + from.map(function (s) {
       return '<a href="#' + encodeURIComponent(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
     }).join(', ');
   }
@@ -343,14 +426,14 @@
   function renderPage(slug) {
     const page = el('page'); const p = PAGES[slug];
     if (!p) {
-      page.innerHTML = '<h1>Not found</h1><p>No page at <code>' + escapeHtml(slug) + '</code>.</p>';
+      page.innerHTML = '<h1>' + tr('notFound') + '</h1><p>' + tr('noPageAt') + ' <code>' + escapeHtml(slug) + '</code>.</p>';
       tocHtml = ''; el('backlinks').innerHTML = ''; placeToc();
       return;
     }
     page.innerHTML = renderMarkdown(p.content);
     page.insertAdjacentHTML('afterbegin', crumbHtml(slug));
     if (mode === 'live' && editButton) { // the Edit button rides the crumb line; the notice below it is a full-width box, not breadcrumb text
-      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn btn--blue" type="button" data-edit="open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 13.5l.6-2.8 8-8 2.2 2.2-8 8zM10.6 3.2l2.2 2.2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Edit</button>');
+      page.querySelector('.breadcrumbs').insertAdjacentHTML('beforeend', '<button class="btn edit-btn btn--blue" type="button" data-edit="open"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 13.5l.6-2.8 8-8 2.2 2.2-8 8zM10.6 3.2l2.2 2.2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' + tr('edit') + '</button>');
       page.querySelector('.breadcrumbs').insertAdjacentHTML('afterend', '<span id="editNote" class="edit-note" role="status" aria-live="polite"></span>');
     }
     fixMdLinks(page, p.folder);
@@ -372,11 +455,11 @@
     const byFolder = {};
     slugs.forEach(function (s) { const f = PAGES[s].folder || '(root)'; (byFolder[f] = byFolder[f] || []).push(s); });
     if (!Object.keys(PAGES).length) {
-      page.innerHTML = '<h1>Home</h1><p class="meta">No pages yet. Add <code>.md</code> files to <code>articles/</code> and run the build, or use <b>Live render</b>.</p>';
+      page.innerHTML = '<h1>' + tr('home') + '</h1><p class="meta">' + tr('noPages') + ' <b>' + tr('btnLive') + '</b>.</p>';
       return;
     }
     const recent = slugs.map(function (s) { return PAGES[s]; }).sort(function (a, b) { return b.mtime - a.mtime; }).slice(0, 8);
-    let html = '<h1>' + (activeTag ? 'Tagged: ' + escapeHtml(activeTag) : 'Home') + '</h1>';
+    let html = '<h1>' + (activeTag ? tr('tagPrefix') + escapeHtml(activeTag) : tr('home')) + '</h1>';
     html += '<h2>Recent</h2><ul class="recent">' + recent.map(function (p) {
       return '<li><a href="#' + encodeURIComponent(p.slug) + '">' + escapeHtml(p.title) + '</a> <span class="meta">' + new Date(p.mtime * 1000).toLocaleDateString() + '</span></li>';
     }).join('') + '</ul>';
@@ -430,7 +513,7 @@
     };
     // root pages are listed flat (no folder); top-level folders are <details> groups
     let html = orderedItems(root, '').map(function (i) { return i[1]; }).join('');
-    if (!slugs.length) html = '<div class="empty">No pages.</div>';
+    if (!slugs.length) html = '<div class="empty">' + tr('emptyTree') + '</div>';
     tree.innerHTML = html;
     markActive();
   }
@@ -485,8 +568,8 @@
     const hits = all.slice(0, max);
     box.innerHTML = hits.length ? hits.map(function (s) {
       return '<a href="#' + encodeURIComponent(s) + '"><span class="crumb">' + markHits((PAGES[s].folder ? PAGES[s].folder + ' / ' : '') + PAGES[s].title, q) + '</span>' + markHits(snippet(PAGES[s].plain, q), q) + '</a>';
-    }).join('') : '<a>&mdash; no results &mdash;</a>';
-    if (all.length > max) box.innerHTML += '<div class="search-note">' + all.length + ' matches &mdash; showing the first ' + max + '. Edit <code>maxResults</code> in config.js to see more.</div>';
+    }).join('') : '<a>' + tr('noResults') + '</a>';
+    if (all.length > max) box.innerHTML += '<div class="search-note">' + tr('matchesNote').replace('%1', all.length).replace('%2', max) + '</div>';
     box.classList.remove('hidden');
   }
 
@@ -508,7 +591,7 @@
   }
   function renderLanding() { // what the empty hash shows: the configured page, else the generated home
     if (landingPage && PAGES[landingPage]) { renderPage(landingPage); return PAGES[landingPage].title; }
-    renderHome(); return 'Home';
+    renderHome(); return tr('home');
   }
   function route() {
     let slug = location.hash.slice(1);
@@ -562,7 +645,7 @@
     const handle = await fileAt(root, path);
     const current = await handle.getFile();
     const raw = await current.text();
-    if (raw.indexOf('\uFFFD') !== -1) throw new Error('someone saved this page in a format other than UTF-8 text, so saving here would damage its special characters. Your text is still in the box; convert the file to UTF-8 in a text editor, then save again.');
+    if (raw.indexOf('\uFFFD') !== -1) throw new Error(tr('notUtf8Error'));
     if (current.lastModified !== version.modified || raw !== version.raw) {
       const theirs = versionOf(current.lastModified, raw);
       const parts = merge3(version.text, text, theirs.text);
@@ -664,7 +747,7 @@
     async del(k) { const d = await this.open(); const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').delete(k); }
   };
   function loadingNote() { // walking a folder on a network drive can take a while; without this the screen just sits blank and looks broken
-    if (!el('page').innerHTML) el('page').innerHTML = '<p class="loading-note">Reading your folder\u2026 this can take a while on a network drive.</p>';
+    if (!el('page').innerHTML) el('page').innerHTML = '<p class="loading-note">' + tr('loadingFolder') + '</p>';
   }
   async function showFolder(h) {
     const mine = loading = { h: h };
@@ -780,12 +863,14 @@
   }
   function makeEditor(ta) {
     if (!window.EasyMDE) return null; // vendor/easymde.min.js missing: the plain textarea still edits
-    return new window.EasyMDE({
+    const cm = new window.EasyMDE({
       element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
-      autoDownloadFontAwesome: false,
+      autoDownloadFontAwesome: false, promptTexts: { link: tr('promptLink'), url: tr('promptUrl') }, // the link dialog's prompts, which ship in English
       toolbar: ['bold', 'italic', 'strikethrough', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo',
         { name: 'wiki-break', title: '', action: function () {} }].concat(wikiButtons()) // the invisible break: the wiki buttons always start on their own row, so they never get cut in half by the wrap (and no separator dangles at the row end)
     });
+    translateToolbar(cm);
+    return cm;
   }
   function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
   function draftReadOnly(ed, locked) {
@@ -805,16 +890,16 @@
       const opened = await readForEdit(h, p.path);
       if (liveHandle !== h || !PAGES[slug] || (shownPage || landingPage) !== slug || editing) return;
       if (opened.text.indexOf('\uFFFD') !== -1) {
-        el('editNote').textContent = 'This page is not saved as UTF-8 text, so saving it here would damage its special characters. Convert it to UTF-8 in a text editor first.';
+        el('editNote').textContent = tr('utf8Note');
         return;
       }
       editing = { root: h, slug: slug, path: p.path, version: opened.version, saving: false, incoming: null, conflict: null, cm: null };
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><div id="editAlert" class="edit-alert"></div><div id="editConflicts" class="edit-conflicts"></div>' +
         '<textarea id="editText" spellcheck="false"></textarea>' +
-        '<div class="editor-bar"><button id="editPreview" class="btn" type="button" data-edit="preview"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>Preview</button>' +
-        '<button id="editSave" class="btn btn--green" type="button" data-edit="save"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3h8l2.5 2.5V13H3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M5.5 3v3.5h5V3M5.5 13V9.5h5V13" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Save</button>' +
-        '<button id="editCancel" class="btn btn--red" type="button" data-edit="cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Cancel</button><span id="editMsg" class="edit-msg"></span></div>' +
+        '<div class="editor-bar"><button id="editPreview" class="btn" type="button" data-edit="preview"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>' + tr('preview') + '</button>' +
+        '<button id="editSave" class="btn btn--green" type="button" data-edit="save"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3h8l2.5 2.5V13H3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M5.5 3v3.5h5V3M5.5 13V9.5h5V13" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>' + tr('save') + '</button>' +
+        '<button id="editCancel" class="btn btn--red" type="button" data-edit="cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' + tr('cancel') + '</button><span id="editMsg" class="edit-msg"></span></div>' +
         '<div id="editPreviewBox" class="edit-preview" hidden></div></div>';
       const ta = el('editText');
       ta.value = opened.text;
@@ -826,7 +911,7 @@
   async function saveEditor() {
     const ed = editing;
     if (!ed || ed.saving || ed.conflict) return;
-    ed.saving = true; lockEditor(true); editMsg('Saving\u2026');
+    ed.saving = true; lockEditor(true); editMsg(tr('saving'));
     let r;
     try { r = await saveFile(ed.root, ed.path, draftText(ed), ed.version); }
     catch (e) { r = { error: e }; }
@@ -837,17 +922,17 @@
     if (editing !== ed) return;
     if (!r.ok) {
       ed.saving = false; lockEditor(false);
-      if (r.error) { editMsg('Could not save: ' + r.error.message); return; }
+      if (r.error) { editMsg(tr('couldNotSave') + r.error.message); return; }
       ed.incoming = null; el('editAlert').innerHTML = '';
       reconcile(ed, r.parts, r.version);
-      editMsg('Someone else saved this page while you were editing, on the same lines as you. Nothing was saved: choose what to keep above, then Save again.');
+      editMsg(tr('conflictOnSave'));
       return;
     }
     renderTags(); showPage(shownPage);
     // the confirmation lands in a centered overlay over the re-rendered page, and always reminds
     // about the build: what Save updates is the .md file, so others only see it in the bundled
     // snapshot after build.sh/build.bat runs — everyone who saves needs to know this, not just once
-    toast('Saved. Re-run the build (build.sh, or build.bat on Windows) to refresh the bundled snapshot, so wikis opened without live render see this edit.');
+    toast(tr('savedToast'));
   }
   async function checkEditedPage() {
     const ed = editing;
@@ -861,9 +946,9 @@
     if (now.text === ed.version.text) { ed.version = now; ed.incoming = null; el('editAlert').innerHTML = ''; return; }
     if (ed.incoming && raw === ed.incoming.raw) { ed.incoming.modified = f.lastModified; return; }
     ed.incoming = now;
-    el('editAlert').innerHTML = 'Someone else saved this page while you were editing.' +
-      ' <button class="btn" type="button" data-edit="merge">Merge their changes into mine</button>' +
-      ' <button class="btn" type="button" data-edit="changes">Show what changed</button>';
+    el('editAlert').innerHTML = tr('someoneSaved') +
+      ' <button class="btn" type="button" data-edit="merge">' + tr('mergeBtn') + '</button>' +
+      ' <button class="btn" type="button" data-edit="changes">' + tr('changesBtn') + '</button>';
   }
   function changedLines(before, after) {
     const a = splitLines(before), b = splitLines(after), match = matchLines(a, b), out = [];
@@ -916,13 +1001,13 @@
   }
   function showConflicts(ed) {
     const c = ed.conflict;
-    el('editConflicts').innerHTML = '<p>Your edit and theirs changed the same lines. For each place below, choose what to keep; the text box unlocks once every one is decided.</p>' +
+    el('editConflicts').innerHTML = '<p>' + tr('conflictsIntro') + '</p>' +
       c.parts.map(function (p, k) {
         if (!p.conflict || c.choices[k]) return '';
         const btn = function (side, label) { return '<button class="btn" type="button" data-edit="pick" data-k="' + k + '" data-side="' + side + '">' + label + '</button>'; };
-        return '<div class="conflict"><div class="conflict-side">Theirs</div><pre>' + escapeHtml(p.theirs) + '</pre>' +
-          '<div class="conflict-side">Yours</div><pre>' + escapeHtml(p.mine) + '</pre>' +
-          '<div class="conflict-bar">' + btn('mine', 'Keep mine') + btn('theirs', 'Keep theirs') + btn('both', 'Keep both') + '</div></div>';
+        return '<div class="conflict"><div class="conflict-side">' + tr('theirs') + '</div><pre>' + escapeHtml(p.theirs) + '</pre>' +
+          '<div class="conflict-side">' + tr('yours') + '</div><pre>' + escapeHtml(p.mine) + '</pre>' +
+          '<div class="conflict-bar">' + btn('mine', tr('keepMine')) + btn('theirs', tr('keepTheirs')) + btn('both', tr('keepBoth')) + '</div></div>';
       }).join('');
   }
   function pickConflict(k, side) {
@@ -938,14 +1023,14 @@
     ed.conflict = null; el('editConflicts').innerHTML = '';
     draftReadOnly(ed, false); el('editSave').disabled = false;
     putMerged(ed, parts, c.version);
-    editMsg('Their changes are merged into your text. Check it, then Save.');
+    editMsg(tr('mergedMsg'));
   }
   function cancelEditor() { showPage(shownPage); lastRefresh = 0; refreshLive(); }
   function previewEditor() { // toggle: the draft rendered through the wiki's own engine as a modal over everything, so what you preview is what saving produces (EasyMDE's built-in preview speaks a different markdown flavour and would lie about [[links]], badges, ::: — see makeEditor)
     if (!editing) return;
     const box = el('editPreviewBox');
     if (!box.hidden) { box.hidden = true; return; }
-    box.innerHTML = '<p class="edit-preview-hint">Click outside or press Esc to close.</p>' + renderMarkdown(parseFrontmatter(draftText(editing)).body); // strip the front matter first, exactly like build.sh's snapshot does — raw, its --- lines come out as setext headings
+    box.innerHTML = '<p class="edit-preview-hint">' + tr('previewHint') + '</p>' + renderMarkdown(parseFrontmatter(draftText(editing)).body); // strip the front matter first, exactly like build.sh's snapshot does — raw, its --- lines come out as setext headings
     fixMdLinks(box, (PAGES[editing.slug] || {}).folder || '');
     highlightCode(box); runKaTeX(box); runMermaid(box);
     box.hidden = false;
@@ -953,15 +1038,24 @@
 
   // ---------- init ----------
   async function init() {
+    document.documentElement.setAttribute('lang', tr('langCode')); // <html lang> follows the interface language tr() picked
+    el('menuBtn').title = tr('menu'); el('menuBtn').setAttribute('aria-label', tr('menu'));
+    el('search').placeholder = tr('search'); el('search').setAttribute('aria-label', tr('search'));
+    el('clearSearch').title = tr('clearSearch');
+    el('mode').title = tr('modeTitle');
+    el('refresh').title = tr('refreshTitle'); el('refresh').setAttribute('aria-label', tr('refreshTitle'));
+    el('leave').textContent = tr('btnBundled'); el('leave').title = tr('btnBundledTitle');
+    el('choose').textContent = tr('btnLive'); el('choose').title = tr('btnLiveTitle');
+    el('resizer').title = tr('resizer');
     el('refresh').addEventListener('click', refreshLive);
     window.addEventListener('focus', function () { if (!loading) refreshLive(); }); // re-read live folder when the tab regains focus
     setInterval(pollLive, 5000);
     el('search').addEventListener('input', function (e) { doSearch(e.target.value); });
     const themeBtn = el('themeBtn');
-    const themeName = { system: 'System', light: 'Light', dark: 'Dark' };
-    const showTheme = function (t) {
-      themeBtn.dataset.theme = t;
-      themeBtn.title = 'Theme: ' + themeName[t] + ' (click for ' + themeName[nextTheme(t)] + ')';
+    const showTheme = function (v) {
+      themeBtn.dataset.theme = v;
+      const names = { system: tr('themeSystem'), light: tr('themeLight'), dark: tr('themeDark') };
+      themeBtn.title = tr('themeTitle').replace('%1', names[v]).replace('%2', names[nextTheme(v)]);
       themeBtn.setAttribute('aria-label', themeBtn.title);
     };
     showTheme(document.documentElement.style.colorScheme || 'system'); // the <head> script already applied the saved choice

@@ -211,6 +211,8 @@ window.WIKI = {
   // brandIcon: '📚',     // left out = built-in logo; any emoji/character replaces it; '' hides it
   favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = built-in logo
   expandOnPrint: true,    // open every fold section when printing; false keeps folds as you left them
+  language: '',           // interface language: 'en' or 'fr' built in; '' = your browser's language if a pack exists, else 'en'
+  // ui: { save: 'Stocker', preview: 'Aperçu' }, // replace single interface strings, any language; wins over language
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
@@ -225,6 +227,21 @@ window.WIKI = {
 
 Every key has a built-in default, so an older `config.js` keeps working when a new
 version adds settings.
+
+**Interface language.** `language: 'fr'` (or `'en'`) labels every word the app shows —
+search, topbar, theme button, the editor and its conflict-resolution UI, toasts. Left at
+`''`, the browser's own language decides when a pack exists for it. Two English packs
+ship inside `app.js` (`uiDict()`); add your own without touching the app by listing keys
+in `config.js`:
+
+```js
+language: 'de', // no German pack: starts English…
+ui: { save: 'Speichern', preview: 'Vorschau', edit: 'Bearbeiten' }, // …until you name the words
+```
+
+Missing keys always fall back to English, so a half-filled `ui` is fine. Article text
+and the markdown-syntax tooltips in the editor toolbar (the `> [!NOTE]` and `::: fold`
+snippets) are not translated — your articles are already in your language.
 
 ## Upgrading the wiki code
 
