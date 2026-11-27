@@ -773,7 +773,7 @@
     return new window.EasyMDE({
       element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
       autoDownloadFontAwesome: false,
-      toolbar: ['bold', 'italic', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo', '|'].concat(wikiButtons())
+      toolbar: ['bold', 'italic', 'strikethrough', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo', '|'].concat(wikiButtons())
     });
   }
   function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }

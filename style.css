@@ -890,10 +890,12 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .breadcrumbs:has(+ .editor) { position: static; } /* while editing, the toolbar takes the pinned top spot; the path line scrolls away instead of stacking */
 .editor-toolbar button { color: var(--text); padding: 0 7px; min-width: 30px; } /* word labels need air, unlike the icon fonts other wikis ship */
 .editor-toolbar button:hover { background: var(--hover); border-color: var(--border-strong); }
+.editor-toolbar button.active { background: var(--field); border-color: var(--border-strong); } /* EasyMDE lights up toggled buttons; vendor hardcodes a glaring #bebebe */
 .editor-toolbar button::before { font: 600 12px/1 system-ui, sans-serif; }
 .editor-toolbar button.bold::before { content: "B"; }
 .editor-toolbar button.italic::before { content: "I"; font-style: italic; }
 .editor-toolbar button.heading::before { content: "H"; }
+.editor-toolbar button.strikethrough::before { content: "S̶"; } /* U+0336 combining stroke: no icon font needed */
 .editor-toolbar button.link::before { content: "link"; }
 .editor-toolbar button.quote::before { content: "quote"; }
 .editor-toolbar button.code::before { content: "code"; }

@@ -115,7 +115,8 @@ edited from this copy.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
-and a small toolbar covers bold, italic, heading, link, quote, code, lists,
+and a small toolbar covers bold, italic, strikethrough, heading, link, quote,
+code, lists,
 table and undo/redo, plus dropdowns for this wiki's own formats: **alert**
 (`> [!NOTE]` and friends), **fold** (foldable `::: fold` sections and named
 `::: blocks`), **tabs** (a ready-made two-panel `::: tabs` scaffold), **badge**
