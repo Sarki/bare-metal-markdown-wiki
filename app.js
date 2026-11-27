@@ -567,7 +567,7 @@
     tree.querySelectorAll('.page-toc').forEach(function (n) { n.remove(); });
     if (shownPage && tocHtml && (tocSide === 'left' || narrowMq.matches)) { // narrow: the right rail is gone, the TOC follows the drawer instead
       const act = links.find(function (a) { return a.dataset.slug === shownPage; });
-      if (act) act.insertAdjacentHTML('afterend', tocHtml); // TOC sits directly under the file name
+      if (act) (act.closest('.trow') || act).insertAdjacentHTML('afterend', tocHtml); // TOC sits directly under the file name — after the whole row, so live mode's flex row (link + trash) stays intact and the TOC doesn't squeeze between them
     }
     markTocPosition();
   }
