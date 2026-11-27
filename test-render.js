@@ -111,11 +111,12 @@ if ((o3.match(/badge--yellow/g) || []).length === 3) pass++;
 else { fail++; console.error('FAIL: badgeColors case-insensitive\n  out:  ' + o3); }
 // editor guard: every snippet the WYSIWYG toolbar inserts must actually render as its feature —
 // keeps app.js wikiSnippets() in sync with this renderer's syntax
+global.WIKI = undefined; // build the menu from the default colours, not the setting tests above
 const snippetGroups = (0, eval)('(function () { ' + require('./test-grab.js')('wikiSnippets') + '; return { wikiSnippets: wikiSnippets }; })()').wikiSnippets();
 let snipN = 0;
 for (const g of snippetGroups) for (const it of g.items) {
   snipN++;
-  const input = it.b + 'x' + it.a; // 'x' = whatever the author types at the caret
+  const input = it.b + ' more' + it.a; // ' more' = whatever the author types at the caret (a colour word must stay the FIRST word of a badge)
   let out;
   try { out = md.render(input); } catch (e) { out = 'RENDER THREW: ' + e.message; }
   if (out.includes(it.then)) pass++;

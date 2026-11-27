@@ -1184,12 +1184,15 @@ t('the only page is saved, then someone removes it: the next polls stop showing 
 });
 
 t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its snippet with the caret inside', async function () {
-  const env = { EasyMDE: function (o) { env.opts = o; return {}; } };
+  const env = { EasyMDE: function (o) { env.opts = o; return {}; }, MditExtras: { badgeColors: function () { return { mauve: ['plum'] }; }, buttonColors: ['red'] } };
   const api = (0, eval)('(function (window) { ' + ['wikiSnippets', 'insertSnip', 'wikiButtons', 'makeEditor'].map(grab).join('\n') + '; return { makeEditor: makeEditor }; })')(env);
   api.makeEditor({});
   const wiki = ((env.opts || {}).toolbar || []).filter(function (b) { return typeof b === 'object'; });
   const bad = [];
-  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,tabs,inline', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
+  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,tabs,badge,button', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
+  const badge = wiki.filter(function (b) { return b.name === 'badge'; })[0];
+  check(bad, badge.children.map(function (b) { return b.title; }).join(',') === 'plain,mauve', 'the badge menu ignores the user badgeColors config: ' + badge.children.map(function (b) { return b.title; }).join(','));
+  check(bad, wiki.filter(function (b) { return b.name === 'button'; })[0].children.length === 2, 'the button menu has no colour entries');
   for (const g of wiki) {
     const items = g.children || [g];
     check(bad, items.length > 1 || !g.children, g.name + ': a one-item dropdown renders as a plain button, got both');

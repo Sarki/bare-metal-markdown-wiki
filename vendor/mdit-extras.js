@@ -213,6 +213,7 @@
      between @{ and } becomes a <span class="badge">, escaped.
      A lone @ (like an e-mail) is left alone — the { is required.
      Known status words get a color; the badgeColors setting in config.js — this file only keeps the defaults for when the setting is missing. */
+  var BUTTON_COLORS = ['green', 'yellow', 'red', 'blue', 'purple']; // fixed set: btn--<name> classes exist in style.css
   var DEFAULT_BADGE_COLORS = {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
@@ -221,8 +222,10 @@
     purple: ['alpha', 'experimental', 'planned', 'idea']
   };
 
+  function effectiveBadgeColors() { return (global.WIKI && global.WIKI.badgeColors) || DEFAULT_BADGE_COLORS; }
+
   function badges(md) {
-    var COLORS = (global.WIKI && global.WIKI.badgeColors) || DEFAULT_BADGE_COLORS;
+    var COLORS = effectiveBadgeColors();
     var LOOKUP = {}; // word → color, lowercased once: config entries match case-insensitively
     for (var c in COLORS) (COLORS[c] || []).forEach(function (w) { LOOKUP[String(w).toLowerCase()] = c; });
     var RE = /^@\{([^{}]+)\}/; // anchored: markdown-it calls inline rules at any stop-char, so an unanchored match would swallow the text before @{
@@ -255,6 +258,7 @@
      {color} suffix (green/yellow/red/blue/purple) fills the button. */
   function buttons(md) {
     // after 'inline': link tokens and their labels exist by now
+    var COLOR_RE = new RegExp('^\\{(' + BUTTON_COLORS.join('|') + ')\\}');
     md.core.ruler.after('inline', 'mdit_button', function (state) {
       state.tokens.forEach(function (t) {
         if (t.type !== 'inline' || !t.children) return;
@@ -270,7 +274,7 @@
             while (k < ch.length && ch[k].type !== 'link_close') k++;
             var nx = ch[k + 1]; // a link label cannot contain another link: first close wins
             if (nx && nx.type === 'text') {
-              var m = /^\{(green|yellow|red|blue|purple)\}/.exec(nx.content);
+              var m = COLOR_RE.exec(nx.content);
               if (m) { nx.content = nx.content.slice(m[0].length); ch[i].attrJoin('class', 'btn--' + m[1]); }
             }
           }
@@ -279,5 +283,6 @@
     });
   }
 
-  global.MditExtras = { container: container, alerts: alerts, tabs: tabs, badges: badges, buttons: buttons };
+  global.MditExtras = { container: container, alerts: alerts, tabs: tabs, badges: badges, buttons: buttons,
+    badgeColors: effectiveBadgeColors, buttonColors: BUTTON_COLORS }; // app.js builds the editor's colour menus from these, so user config shows up there too
 })(window);
