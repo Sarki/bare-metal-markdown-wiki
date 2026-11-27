@@ -888,7 +888,7 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   z-index: 1;
 }
 .breadcrumbs:has(+ .editor) { position: static; } /* while editing, the toolbar takes the pinned top spot; the path line scrolls away instead of stacking */
-.editor-toolbar button { color: var(--text); }
+.editor-toolbar button { color: var(--text); padding: 0 7px; min-width: 30px; } /* word labels need air, unlike the icon fonts other wikis ship */
 .editor-toolbar button:hover { background: var(--hover); border-color: var(--border-strong); }
 .editor-toolbar button::before { font: 600 12px/1 system-ui, sans-serif; }
 .editor-toolbar button.bold::before { content: "B"; }
@@ -908,9 +908,10 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .editor-toolbar button.badge::before { content: "badge \25be"; }
 .editor-toolbar button.button::before { content: "button \25be"; }
 .editor-toolbar .easymde-dropdown-content button::before { content: attr(title); } /* dropdown items label themselves: title is already the word */
-.editor-toolbar .easymde-dropdown { background: var(--panel); border: 1px solid transparent; border-radius: 3px; } /* vendor dropdown styling hardcodes white (border + corner-triangle gradient) and squares the corners */
+.editor-toolbar .easymde-dropdown { background: var(--panel); border: 1px solid transparent; border-radius: 3px; padding: 0 7px; } /* vendor dropdown styling hardcodes white (border + corner-triangle gradient), squares the corners and pads nothing */
 .editor-toolbar .easymde-dropdown:hover { background: var(--hover); }
-.easymde-dropdown-content { background: var(--panel); box-shadow: var(--shadow); }
+.easymde-dropdown-content { background: var(--panel); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: var(--shadow); padding: 5px; }
+.editor-toolbar .easymde-dropdown-content button { height: auto; border-radius: 4px; padding: 4px 10px; }
 /* markdown colours, reusing the code-block palette above so both modes match */
 .cm-s-easymde .cm-formatting { color: var(--muted); }
 .cm-s-easymde .cm-header { color: var(--hl-title); }
