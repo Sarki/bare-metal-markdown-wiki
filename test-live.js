@@ -4,7 +4,7 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
-  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict'].map(grab).join('\n');
+  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
@@ -28,10 +28,11 @@ const factory = (0, eval)(`(function (env) {
     el('editNote').textContent = ''; // the real renderPage rebuilds that slot empty every render
   }
   function renderHome() { el('page').innerHTML = 'HOME ' + Object.keys(PAGES).sort().join(','); }
+  function renderMarkdown(t) { return 'MD[' + t + ']'; } function fixMdLinks() {} function highlightCode() {} function runKaTeX() {} function runMermaid() {} // previewEditor's friends, stubbed so the test checks the wiring, not the renderer
   ${GRABBED}
   return {
     route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder, leaveLive: leaveLive,
-    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict,
+    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor,
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
     get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }
@@ -103,11 +104,11 @@ function makeApp(opts) {
   const pageEl = mk();
   Object.defineProperty(pageEl, 'innerHTML', {
     get() { return html; },
-    set(v) { html = v; editorEls = {}; ['editText', 'editMsg', 'editSave', 'editCancel', 'editAlert', 'editConflicts'].forEach(function (id) { if (v.indexOf('id="' + id + '"') !== -1) editorEls[id] = mk(); }); }
+    set(v) { html = v; editorEls = {}; ['editText', 'editMsg', 'editSave', 'editCancel', 'editAlert', 'editConflicts', 'editPreview', 'editPreviewBox'].forEach(function (id) { if (v.indexOf('id="' + id + '"') !== -1) editorEls[id] = mk(); }); }
   });
   const env = {
     location: { hash: opts.hash || '' }, document: { hidden: false, title: '' }, landingPage: opts.landingPage || '', label: '', pick: null, window: opts.window || {},
-    el(id) { if (id === 'page') return pageEl; if (/^edit(Text|Msg|Save|Cancel|Alert|Conflicts)$/.test(id)) return (editorEls && editorEls[id]) || null; return els[id] || (els[id] = mk()); }
+    el(id) { if (id === 'page') return pageEl; if (/^edit(Text|Msg|Save|Cancel|Alert|Conflicts|Preview|PreviewBox)$/.test(id)) return (editorEls && editorEls[id]) || null; return els[id] || (els[id] = mk()); }
   };
   const app = factory(env);
   return {
@@ -135,6 +136,22 @@ test('baseline: an edit is saved and the saved text is shown', async function ()
   check(bad, w.screen().includes('| v2'), 'screen: ' + w.screen());
   check(bad, /^Saved\./.test(w.toastMsg() || ''), 'no centered overlay after Save: ' + JSON.stringify(w.toastMsg()));
   check(bad, /build/.test(w.toastMsg() || ''), 'no build reminder in the overlay: ' + JSON.stringify(w.toastMsg()));
+  if (bad.length) throw new Error(bad.join('\n  '));
+});
+
+test('Preview renders the draft through the wiki engine and toggles off; it never touches disk', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  await w.app.openEditor(); w.editor().value = 'draft [[X]]';
+  check(bad, /id="editPreviewBox"[^>]*hidden/.test(w.screen()), 'the editor markup lost its hidden preview box');
+  const box = w.env.el('editPreviewBox'); box.hidden = true; // the markup ships the box hidden
+  w.app.previewEditor();
+  check(bad, box.innerHTML === 'MD[draft [[X]]]', 'the box did not get the draft through the wiki engine: ' + JSON.stringify(box.innerHTML));
+  check(bad, box.hidden === false, 'the box stayed hidden after Preview');
+  w.app.previewEditor();
+  check(bad, box.hidden === true, 'a second Preview click did not hide the box');
+  check(bad, textOf(tree['Home.md']) === 'v1', 'preview wrote to disk');
   if (bad.length) throw new Error(bad.join('\n  '));
 });
 

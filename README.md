@@ -128,9 +128,12 @@ it produces: a badge entry inserts a keyword that renders in that colour
 Each inserts the snippet at the
 caret, wrapping whatever text you had selected. Its buttons show words instead
 of icons because the wiki
-ships no icon font, and there is no preview button — EasyMDE's own preview uses
-a different Markdown engine, so `[[links]]` and `:::` boxes would come out
-wrong there. Nothing is fetched from the internet. The **Save** and **Cancel**
+ships no icon font, and EasyMDE's own preview button is left off — its preview
+uses a different Markdown engine, so `[[links]]` and `:::` boxes would come out
+wrong there. Instead the bottom bar has a **Preview** button (left of Save):
+it renders your draft with the wiki's very own engine, so the preview is
+exactly what saving would produce, `[[links]]`, badges and `:::` boxes
+included; click it again to hide the preview. Nothing is fetched from the internet. The **Save** and **Cancel**
 buttons stay pinned to the bottom of the window while you scroll a long file,
 and so does the formatting toolbar, right under the top bar.
 

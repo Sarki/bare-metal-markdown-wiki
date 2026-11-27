@@ -728,8 +728,9 @@
     clearTimeout(toastTimer); // long enough to read the full build reminder
     toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, 6000);
   }
-  // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview button because
-  // its preview renders with marked, not our markdown-it, so [[links]] and ::: boxes would look wrong there.
+  // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview in its toolbar
+  // because its preview renders with marked, not our markdown-it — [[links]] and ::: boxes would look wrong
+  // there; the editor bar's Preview button uses the real wiki engine instead (previewEditor).
   // autoDownloadFontAwesome stops it pulling Font Awesome off a CDN — the wiki has to work offline.
   function wikiSnippets() { // what the wiki-only toolbar buttons insert: b + caret + a. The leading blank lines break out of the current block so the syntax renders even mid-paragraph; test-render.js checks each one really renders (the "then" marker)
     var bcols = window.MditExtras ? window.MditExtras.badgeColors() : {}; // one item per colour the renderer applies right now, config.js badgeColors included
@@ -811,8 +812,10 @@
       const page = el('page');
       page.innerHTML = crumbHtml(slug) + '<div class="editor"><div id="editAlert" class="edit-alert"></div><div id="editConflicts" class="edit-conflicts"></div>' +
         '<textarea id="editText" spellcheck="false"></textarea>' +
-        '<div class="editor-bar"><button id="editSave" class="btn btn--green" type="button" data-edit="save"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3h8l2.5 2.5V13H3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M5.5 3v3.5h5V3M5.5 13V9.5h5V13" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Save</button>' +
-        '<button id="editCancel" class="btn btn--red" type="button" data-edit="cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Cancel</button><span id="editMsg" class="edit-msg"></span></div></div>';
+        '<div class="editor-bar"><button id="editPreview" class="btn" type="button" data-edit="preview"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>Preview</button>' +
+        '<button id="editSave" class="btn btn--green" type="button" data-edit="save"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 3h8l2.5 2.5V13H3z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M5.5 3v3.5h5V3M5.5 13V9.5h5V13" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Save</button>' +
+        '<button id="editCancel" class="btn btn--red" type="button" data-edit="cancel"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Cancel</button><span id="editMsg" class="edit-msg"></span></div>' +
+        '<div id="editPreviewBox" class="edit-preview" hidden></div></div>';
       const ta = el('editText');
       ta.value = opened.text;
       editing.cm = makeEditor(ta);
@@ -938,6 +941,16 @@
     editMsg('Their changes are merged into your text. Check it, then Save.');
   }
   function cancelEditor() { showPage(shownPage); lastRefresh = 0; refreshLive(); }
+  function previewEditor() { // toggle: the draft rendered through the wiki's own engine, so what you preview is what saving produces (EasyMDE's built-in preview speaks a different markdown flavour and would lie about [[links]], badges, ::: — see makeEditor)
+    if (!editing) return;
+    const box = el('editPreviewBox');
+    if (!box.hidden) { box.hidden = true; return; }
+    box.innerHTML = renderMarkdown(draftText(editing));
+    fixMdLinks(box, (PAGES[editing.slug] || {}).folder || '');
+    highlightCode(box); runKaTeX(box); runMermaid(box);
+    box.hidden = false;
+    box.scrollIntoView();
+  }
 
   // ---------- init ----------
   async function init() {
@@ -982,10 +995,12 @@
         wrap.querySelectorAll('.tab-pane').forEach(function (p) { p.hidden = p.getAttribute('data-i') !== tb.getAttribute('data-i'); });
         return;
       }
+      const pa = e.target.closest('#editPreviewBox a'); // wiki links in the preview would route() away and close the editor; the box is a preview, so its links stay dead
+      if (pa) { e.preventDefault(); return; }
       const ed = e.target.closest('[data-edit]');
       if (ed) {
         if (ed.dataset.edit === 'pick') pickConflict(Number(ed.dataset.k), ed.dataset.side);
-        else ({ open: openEditor, save: saveEditor, cancel: cancelEditor, merge: mergeIncoming, changes: showChanges })[ed.dataset.edit]();
+        else ({ open: openEditor, save: saveEditor, cancel: cancelEditor, merge: mergeIncoming, changes: showChanges, preview: previewEditor })[ed.dataset.edit]();
         return;
       }
       const b = e.target.closest('.copybtn');
