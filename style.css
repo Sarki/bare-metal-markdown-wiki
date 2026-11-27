@@ -907,6 +907,8 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .editor-toolbar button.redo::before { content: "\21b7"; }
 .editor-toolbar button.alert::before { content: "alert \25be"; }
 .editor-toolbar button.fold::before { content: "fold \25be"; }
+.editor-toolbar button.block::before { content: "block"; }
+.editor-toolbar button.tabs::before { content: "tabs"; }
 .editor-toolbar button.badges::before { content: "badge \25be"; }
 .editor-toolbar button.button::before { content: "button \25be"; }
 .editor-toolbar .easymde-dropdown-content button::before { content: attr(title); } /* dropdown items label themselves: title is already the word */

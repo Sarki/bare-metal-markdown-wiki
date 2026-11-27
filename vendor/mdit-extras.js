@@ -236,7 +236,8 @@
   function badges(md) {
     var COLORS = effectiveBadgeColors();
     var LOOKUP = {}; // word → color, lowercased once: config entries match case-insensitively
-    for (var c in COLORS) (COLORS[c] || []).forEach(function (w) { LOOKUP[String(w).toLowerCase()] = c; });
+    var KEYS = {};   // the colour names themselves act as modifiers: @{red my text} → red "my text" (the word is eaten only when followed by a space; synonym words like draft keep showing)
+    for (var c in COLORS) { (COLORS[c] || []).forEach(function (w) { LOOKUP[String(w).toLowerCase()] = c; }); KEYS[c.toLowerCase()] = c; }
     var RE = /^@\{([^{}]+)\}/; // anchored: markdown-it calls inline rules at any stop-char, so an unanchored match would swallow the text before @{
     md.inline.ruler.push('mdit_badge', function (state, silent) {
       var m = RE.exec(state.src.slice(state.pos));
@@ -249,11 +250,14 @@
       return true;
     });
     md.renderer.rules.mdit_badge = function (tokens, idx) {
-      var cls = 'badge';
-      // the first word decides the color: @{draft review} → yellow
-      var k = LOOKUP[tokens[idx].content.toLowerCase().split(/[\s\-/]+/)[0]];
+      var cls = 'badge', text = tokens[idx].content;
+      // the first word decides the color: @{draft review} → yellow; a colour NAME followed by a space is a modifier and gets eaten: @{red my text} → red "my text"
+      var first = text.toLowerCase().split(/[\s\-/]+/)[0];
+      var key = KEYS[first];
+      if (key && /^\s/.test(text.slice(first.length))) text = text.slice(first.length).trim();
+      var k = key || LOOKUP[first];
       if (k) cls += ' badge--' + k;
-      return '<span class="' + cls + '">' + md.utils.escapeHtml(tokens[idx].content) + '</span>';
+      return '<span class="' + cls + '">' + md.utils.escapeHtml(text) + '</span>';
     };
   }
 

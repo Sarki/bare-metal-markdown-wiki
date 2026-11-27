@@ -1189,14 +1189,14 @@ t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its sn
   api.makeEditor({});
   const wiki = ((env.opts || {}).toolbar || []).filter(function (b) { return typeof b === 'object' && b.name !== 'wiki-break'; }); // wiki-break is the invisible row break, not a button
   const bad = [];
-  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,badges,button', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
+  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,block,tabs,badges,button', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
   const badge = wiki.filter(function (b) { return b.name === 'badges'; })[0];
   check(bad, badge.children.map(function (b) { return b.title; }).join(',') === 'plain,mauve', 'the badge menu ignores the user badgeColors config: ' + badge.children.map(function (b) { return b.title; }).join(','));
   check(bad, badge.children[1].className === 'badge--mauve', 'the badge entry does not carry the renderer class that colours it: ' + badge.children[1].className);
   const btn = wiki.filter(function (b) { return b.name === 'button'; })[0];
   check(bad, btn.children.length === 2, 'the button menu has no colour entries');
   check(bad, btn.children[1].className === 'btn--red', 'the button entry does not carry the renderer class that colours it: ' + btn.children[1].className);
-  check(bad, wiki.filter(function (b) { return b.name === 'fold'; })[0].children.some(function (b) { return b.name === 'tabs'; }), 'tabs lost its menu entry');
+  check(bad, wiki.filter(function (b) { return b.name === 'fold'; })[0].children.length === 2, 'fold menu lost an entry: only closed+open belong there now');
   for (const g of wiki) {
     const items = g.children || [g];
     check(bad, items.length > 1 || !g.children, g.name + ': a one-item dropdown renders as a plain button, got both');

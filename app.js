@@ -741,10 +741,14 @@
         { name: 'warning', title: 'warning', b: '\n\n> [!WARNING]\n> ', a: '\n', then: 'markdown-alert-warning' },
         { name: 'caution', title: 'caution', b: '\n\n> [!CAUTION]\n> ', a: '\n', then: 'markdown-alert-caution' },
       ] },
-      { name: 'fold', title: 'Foldable sections, named blocks, tab panels', items: [ // tabs lives in here too: four loose buttons pushed the toolbar onto a second row
+      { name: 'fold', title: 'Foldable section', items: [
         { name: 'fold-closed', title: 'closed', b: '\n\n::: fold Title\n', a: '\n\n:::\n', then: '<details class="fold">' },
         { name: 'fold-open', title: 'open', b: '\n\n::: fold! Title\n', a: '\n\n:::\n', then: '<details class="fold" open' },
+      ] },
+      { name: 'block', title: 'Named container block', items: [ // own buttons: the wiki row breaks keep the toolbar tidy anyway (wiki-break)
         { name: 'block', title: 'block', b: '\n\n::: name\n', a: '\n\n:::\n', then: 'class="container name"' },
+      ] },
+      { name: 'tabs', title: 'Tabbed panels', items: [
         { name: 'tabs', title: 'tabs', b: '\n\n::: tabs\n::: tab: First\n', a: '\n:::\n::: tab: Second\n\n:::\n:::\n', then: 'class="container tabs"' },
       ] },
       { name: 'badges', title: 'Badge pill', items: [ // 'badges', not 'badge': EasyMDE puts the name on the button as a class, and the wiki's own .badge pill rules would grey it out and shrink its font. the colour items keep badge--x classes on purpose: that's what paints them

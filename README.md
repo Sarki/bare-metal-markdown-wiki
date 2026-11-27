@@ -119,8 +119,8 @@ and a small toolbar covers bold, italic, strikethrough, heading, link, quote,
 code, lists,
 table and undo/redo. On a row of its own below them, dropdowns for this wiki's
 own formats: **alert** (`> [!NOTE]` and friends, each entry in its alert's
-colour), **fold** (foldable `::: fold`
-sections, named `::: blocks` and a two-panel `::: tabs` scaffold), **badge** and
+colour), **fold** (foldable `::: fold` sections), **block** (named `::: blocks`)
+and **tabs** (a two-panel `::: tabs` scaffold), plus **badge** and
 **button** — the last two also list the colours, each entry shown in the colour
 it produces: a badge entry inserts a keyword that renders in that colour
 (anything you type after it keeps the colour, and entries follow the
@@ -297,7 +297,7 @@ Any Markdown inside, click the title to open or close.
 :::
 ```
 
-Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block). Add your own colors there: `mauve: { words: ['plum', 'lilac'], color: '#a371f7' }` styles the pill (tinted background and border like the built-ins), shows up in the editor's **badge** menu, and colours the menu entry too; a name-only word list stays the gray pill unless you style `.badge--name` in `user.css`):
+Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block). A colour name followed by a space is a modifier and is left out of the displayed text: `@{red deploy failed}` is a red pill showing “deploy failed”; word entries like `draft` keep showing. Add your own colors in the settings block: `mauve: { words: ['plum', 'lilac'], color: '#a371f7' }` styles the pill (tinted background and border like the built-ins), shows up in the editor's **badge** menu, and colours the menu entry too; a name-only word list stays the gray pill unless you style `.badge--name` in `user.css`):
 
 ```markdown
 This page is @{draft} and the plugin is @{v1.0} stable.

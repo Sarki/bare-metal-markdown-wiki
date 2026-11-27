@@ -71,6 +71,10 @@ const cases = [
   ['badge color green',     '@{stable}',                  '<span class="badge badge--green">stable</span>'],
   ['badge color red',       '@{deprecated}',              'badge--red'],
   ['badge color multiword', '@{draft review}',            'badge--yellow'],
+  ['badge colour-name modifier', '@{red my text}',        '<span class="badge badge--red">my text</span>'], // a colour name + space is a modifier: eaten
+  ['badge synonym not eaten','@{draft review}',           'badge--yellow">draft review'], // word entries keep showing
+  ['badge colour word alone','@{red}',                    '<span class="badge badge--red">red</span>'],
+  ['badge colour hyphen kept','@{red-ish}',               '<span class="badge badge--red">red-ish</span>'], // no space after → part of the word, not a modifier
   ['badge gray fallback',   '@{v1.0}',                    '<span class="badge">v1.0</span>'],
   ['button basic',          'go @[start](a/Basics.md)',   '<a href="a/Basics.md" class="btn">start</a>'],
   ['button label markdown', '@[**go** now](u)',           '<a href="u" class="btn"><strong>go</strong> now</a>'],
@@ -113,9 +117,9 @@ else { fail++; console.error('FAIL: badgeColors case-insensitive\n  out:  ' + o3
 global.WIKI = { badgeColors: { mauve: { words: ['plum', 'lilac'], color: '#a371f7' } } };
 const md4 = new MarkdownIt({ html: true });
 md4.use(MditExtras.badges);
-const o4 = md4.render('@{plum} @{lilac} @{green}');
+const o4 = md4.render('@{plum} @{lilac} @{green} @{mauve tag}');
 const ccols = MditExtras.badgeCustomColors();
-if (o4.includes('badge--mauve">plum') && o4.includes('badge--mauve">lilac') && !o4.includes('badge--mauve">green') && ccols.mauve === '#a371f7' && Object.keys(ccols).length === 1) pass++;
+if (o4.includes('badge--mauve">plum') && o4.includes('badge--mauve">lilac') && !o4.includes('badge--mauve">green') && o4.includes('badge--mauve">tag') && ccols.mauve === '#a371f7' && Object.keys(ccols).length === 1) pass++;
 else { fail++; console.error('FAIL: user-defined badge colour ({ words, color })\n  out:  ' + o4 + '\n  colours: ' + JSON.stringify(ccols)); }
 // editor guard: every snippet the WYSIWYG toolbar inserts must actually render as its feature —
 // keeps app.js wikiSnippets() in sync with this renderer's syntax
