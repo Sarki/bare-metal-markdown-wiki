@@ -54,7 +54,7 @@
   let mode = 'bundled';
   let activeTag = '';
   let liveHandle = null;       // FileSystemDirectoryHandle, once connected
-  let newFolders = [];         // folders made in this session but still empty: no page references them, so the sidebar only learns of them from here
+  let liveDirs = [];           // every folder the live scan saw, empty ones included: the sidebar seeds its folder rows from here
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let liveStamp = '';
   let editing = null;
@@ -100,6 +100,10 @@
         copyCode: 'Copy code snippet', noResults: '\u2014 no results \u2014',
         matchesNote: '%1 matches &mdash; showing the first %2. Edit <code>maxResults</code> in config.js to see more.',
         edit: 'Edit', newPage: 'New page', newFolder: 'New folder',
+        delPage: 'Delete page', delFolder: 'Delete folder',
+        confirmDelPage: 'Delete the page %1? It cannot be undone.',
+        confirmDelFolder: 'Delete the folder %1 and everything inside it? It cannot be undone.',
+        couldNotDelete: 'Could not delete: ',
         promptPageName: 'New page name (without .md):', promptFolderName: 'New folder name:',
         nameTaken: 'A file or folder with that name already exists.',
         nameBad: 'Invalid name: empty, hidden (leading dot), or containing / \\ : * ? " < > |.',
@@ -133,6 +137,10 @@
         copyCode: 'Copier le code', noResults: '\u2014 aucun r\u00e9sultat \u2014',
         matchesNote: '%1 r\u00e9sultats \u2014 voici les %2 premiers. Modifiez <code>maxResults</code> dans config.js pour en voir plus.',
         edit: 'Modifier', newPage: 'Nouvelle page', newFolder: 'Nouveau dossier',
+        delPage: 'Supprimer la page', delFolder: 'Supprimer le dossier',
+        confirmDelPage: 'Supprimer la page %1 ? Cette action est irréversible.',
+        confirmDelFolder: 'Supprimer le dossier %1 et tout son contenu ? Cette action est irréversible.',
+        couldNotDelete: 'Suppression impossible : ',
         promptPageName: 'Nom de la nouvelle page (sans .md) :', promptFolderName: 'Nom du nouveau dossier :',
         nameTaken: 'Un fichier ou dossier porte déjà ce nom.',
         nameBad: 'Nom invalide : vide, caché (point au début), ou contenant / \\ : * ? " < > |.',
@@ -500,7 +508,7 @@
     });
     // a folder keeps whatever the user last set by hand; else it is open when it contains the
     // page on screen (or the landing page), otherwise per the foldersOpen setting
-    for (const p of newFolders) { // folders just created in this session: no page references them yet, so seed their rows here
+    for (const p of liveDirs) { // every folder the scan saw, empty ones included — PAGES alone would hide those
       let node = root;
       for (const part of p.split('/')) { node.subs[part] = node.subs[part] || { pages: [], subs: {} }; node = node.subs[part]; }
     }
@@ -510,10 +518,14 @@
       if (treeOpen && p in treeOpen) return treeOpen[p];
       return activeFolder ? (activeFolder === p || activeFolder.indexOf(p + '/') === 0) : foldersOpen;
     };
-    const linkHtml = function (s) {
-      return '<a href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
-    };
     const canCreate = !!liveHandle && editButton; // live mode writes through the folder handle; editButton: false keeps the wiki read-only
+    const delBtn = function (kind, p) { // trash can, same inline-SVG style as the + buttons
+      return '<button class="newbtn" type="button" data-del="' + kind + '" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '" aria-label="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 4.5h9M6.5 3h3M4.5 4.5l.4 8.5h6.2l.4-8.5M6.7 6.5v4.5M9.3 6.5v4.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    };
+    const linkHtml = function (s) {
+      const a = '<a href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
+      return canCreate ? '<span class="trow">' + a + delBtn('page', s) + '</span>' : a;
+    };
     const newBtns = function (p) { // inline SVG keeps the icon font out, like every other control; the words ride the title/aria-label
       const plus = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
       const fold = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2 4h4l1.5 1.5H14V12.5H2z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><path d="M8 7.5v4M6 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>';
@@ -531,7 +543,7 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + '</span>' : '') + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + delBtn('folder', p) + '</span>' : '') + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
@@ -641,15 +653,15 @@
     IMAGES = {};
   }
   async function loadLive(handle) {
-    const live = { stamp: '', raw: [], images: {} };
+    const live = { stamp: '', raw: [], images: {}, dirs: [] };
     await walkDir(handle, '', live);
     return live;
   }
-  function applyLive(live) { liveStamp = live.stamp; RAW = live.raw; IMAGES = live.images; }
+  function applyLive(live) { liveStamp = live.stamp; RAW = live.raw; IMAGES = live.images; liveDirs = live.dirs; }
   async function folderStamp(dir, prefix = '') {
     let stamp = '';
     for await (const e of dir.values()) {
-      if (e.kind === 'directory') stamp += await folderStamp(e, prefix + e.name + '/');
+      if (e.kind === 'directory') { stamp += prefix + e.name + '/\n'; stamp += await folderStamp(e, prefix + e.name + '/'); } // folder names in the stamp too: an empty folder appearing or vanishing has to count as a change
       else if (/\.md$/i.test(e.name) || imgExtRe.test(e.name)) stamp += prefix + e.name + ':' + (await e.getFile()).lastModified + '\n';
     }
     return stamp;
@@ -700,9 +712,17 @@
         catch (e) { if (!nf(e)) throw e; await dir.getDirectoryHandle(name, { create: true }); }
       }
     } catch (e) { return { error: tr('couldNotCreate') + e.message }; }
-    const slug = (folder ? folder + '/' : '') + name; // slug form, no .md — that's what routes and PAGES use
-    if (!page) newFolders.push(slug); // an empty folder holds no page for the index to find: the sidebar renders it from this list
-    return { ok: true, slug: slug };
+    return { ok: true, slug: (folder ? folder + '/' : '') + name }; // slug form, no .md — that's what routes and PAGES use; the next scan picks the entry up, empty folder included
+  }
+  async function deleteEntry(root, page, path) { // page: remove the slug's .md file; else the folder and, recursively, everything inside it
+    if (!validName(path.split('/').pop())) return { error: tr('nameBad') };
+    try {
+      const parts = (page ? path + '.md' : path).split('/');
+      let dir = root;
+      for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
+      await dir.removeEntry(parts[parts.length - 1], page ? undefined : { recursive: true });
+    } catch (e) { return { error: tr('couldNotDelete') + e.message }; }
+    return { ok: true };
   }
   function splitLines(text) { return text.match(/[^\n]*\n|[^\n]+$/g) || []; }
   function matchLines(a, b) {
@@ -755,9 +775,14 @@
     return new RegExp('\\.(' + (ok.length ? ok.join('|') : 'png|jpg|jpeg|gif|svg|webp') + ')$', 'i');
   }
   const imgExtRe = extRe(WIKI.imageExts); // bundled mode has no filter at all — the browser paints any format it supports
-  async function walkDir(handle, prefix, live) { // same files and order as folderStamp, so the stamp comes from this one pass
+  async function walkDir(handle, prefix, live) { // same files, folders and order as folderStamp, so the stamp comes from this one pass
     for await (const e of handle.values()) {
-      if (e.kind === 'directory') { await walkDir(e, prefix + e.name + '/', live); continue; }
+      if (e.kind === 'directory') {
+        live.dirs.push(prefix + e.name);
+        live.stamp += prefix + e.name + '/\n';
+        await walkDir(e, prefix + e.name + '/', live);
+        continue;
+      }
       const isPage = /\.md$/i.test(e.name);
       if (!isPage && !imgExtRe.test(e.name)) continue;
       const f = await e.getFile();
@@ -804,7 +829,7 @@
       if (loading !== mine || editing) return false;
       if (h === liveHandle && live.stamp === liveStamp) return true; // nothing changed: no redraw, so a folder you are browsing survives focus refreshes and live polls
       const scroll = h === liveHandle ? el('content').scrollTop : 0;
-      liveHandle = h; newFolders = []; applyLive(live); mode = 'live';
+      liveHandle = h; applyLive(live); mode = 'live';
       buildIndex(); renderTags(); setMode('live'); showPage(shownPage);
       el('content').scrollTop = scroll;
       return true;
@@ -825,7 +850,7 @@
   }
   function leaveLive() { // the way back out: bundled snapshot now, and this wiki forgets the folder so the next open does not quietly live-render it again
     if (editing || mode !== 'live') return;
-    liveHandle = null; newFolders = []; liveStamp = ''; mode = 'bundled';
+    liveHandle = null; liveDirs = []; liveStamp = ''; mode = 'bundled';
     IDB.del(dirKey).catch(function () {}); // best effort: if IDB is broken, the cost is just the folder reopening next time
     loadBundled();
     buildIndex(); renderTags(); renderSidebar(); setMode('bundled');
@@ -1163,14 +1188,22 @@
       const a = e.target.closest('a[data-slug]');
       if (a && a.dataset.slug === shownPage) { e.preventDefault(); closeNav(); el('content').scrollTo({ top: 0, behavior: 'smooth' }); }
     });
-    el('tree').addEventListener('click', async function (e) { // live-mode + buttons: an empty page (then open it) or a folder, under the button's data-path
-      const b = e.target.closest('[data-new]');
-      if (!b) return;
+    el('tree').addEventListener('click', async function (e) { // live-mode sidebar buttons: + creates an empty page (then opens it) or a folder under the button's data-path, the trash removes one
+      const n = e.target.closest('[data-new]'), d = e.target.closest('[data-del]');
+      if (!n && !d) return;
       e.preventDefault(); // the folder-row buttons sit inside <summary>: the click must not toggle the folder open/closed
-      const page = b.getAttribute('data-new') === 'page';
+      if (d) {
+        const page = d.getAttribute('data-del') === 'page', path = d.getAttribute('data-path') || '';
+        if (!window.confirm(tr(page ? 'confirmDelPage' : 'confirmDelFolder').replace('%1', path.split('/').pop()))) return;
+        const rd = await deleteEntry(liveHandle, page, path);
+        if (rd.error) { toast(rd.error); return; }
+        await refreshLive(); // the next scan no longer sees the entry: rows go, and a deleted page on screen reroutes to not-found
+        return;
+      }
+      const page = n.getAttribute('data-new') === 'page';
       const name = ((window.prompt(page ? tr('promptPageName') : tr('promptFolderName'), '') || '') + '').trim();
       if (!name) return;
-      const r = await createEntry(liveHandle, page, b.getAttribute('data-path') || '', name);
+      const r = await createEntry(liveHandle, page, n.getAttribute('data-path') || '', name);
       if (r.error) { toast(r.error); return; }
       await refreshLive();
       if (page) location.hash = '#' + encodeURIComponent(r.slug);

@@ -4,7 +4,7 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
-  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar', 'validName', 'createEntry'].map(grab).join('\n');
+  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar', 'validName', 'createEntry', 'deleteEntry'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
@@ -12,7 +12,7 @@ const factory = (0, eval)(`(function (env) {
   const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
   const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
   function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, newFolders = [], lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', toastTimer = null;
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, liveDirs = [], lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', toastTimer = null;
   const setTimeout = function () { return 0; }, clearTimeout = function () {}; // the toast's 2.5s auto-hide must not keep the test process awake
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
@@ -32,10 +32,10 @@ const factory = (0, eval)(`(function (env) {
   ${GRABBED}
   return {
     route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder, leaveLive: leaveLive,
-    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor, createEntry: createEntry,
+    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor, createEntry: createEntry, deleteEntry: deleteEntry, folderStamp: folderStamp,
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
-    get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }, get newFolders() { return newFolders; }
+    get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }, get dirs() { return liveDirs; }
   };
 })`);
 
@@ -55,7 +55,7 @@ function fakeFolder(name, tree) {
         if (!node[n]) { if (!opts || !opts.create) throw new Error('NotFoundError'); node[n] = page(''); }
         return file(node[n], n, prefix + n);
       },
-      async removeEntry(n) { if (!node[n]) throw new Error('NotFoundError'); delete node[n]; },
+      async removeEntry(n, opts) { if (!node[n]) throw new Error('NotFoundError'); if (!isFile(node[n]) && !(opts && opts.recursive)) throw new Error('InvalidStateError'); delete node[n]; }, // like the real API: a non-empty folder needs { recursive: true }
       async *values() { for (const k of Object.keys(node)) { if (!node[k]) continue; yield isFile(node[k]) ? file(node[k], k, prefix + k) : Object.assign(dir(node[k], prefix + k + '/'), { name: k }); } }
     };
   }
@@ -1146,7 +1146,7 @@ t('a save of A/Home that lands after a switch to B does not put A\'s text into B
 function sidebarHtml(shown, hash, treeOpen, live, folders) {
   const tree = { innerHTML: '' };
   const fn = grab('taggedSlugs') + grab('renderSidebar');
-  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; let treeOpen = arguments[3]; let liveHandle = arguments[4] ? { name: "A" } : null; let newFolders = arguments[5] || []; const editButton = true; function tr(k) { return k; } function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
+  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; let treeOpen = arguments[3]; let liveHandle = arguments[4] ? { name: "A" } : null; let liveDirs = arguments[5] || []; const editButton = true; function tr(k) { return k; } function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
   f(tree, { hash: hash }, shown, treeOpen || null, live, folders || []);
   return tree.innerHTML;
 }
@@ -1169,13 +1169,14 @@ t('folders opened or closed by hand survive every sidebar redraw', async functio
 
 t('bundled mode has no create buttons; live mode has them at the root and on every folder', async function () {
   const bad = [];
-  check(bad, !/data-new/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
+  check(bad, !/data-new|data-del/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
   const live = sidebarHtml('Home', '#Home', null, true);
   check(bad, (live.match(/data-new="page"/g) || []).length === 2 && (live.match(/data-new="folder"/g) || []).length === 2, 'create buttons at root + on the folder: ' + live);
   check(bad, /data-new="page" data-path="guides"/.test(live), 'no folder-scoped page button: ' + live);
   const seeded = sidebarHtml('Home', '#Home', null, true, ['guides/sub']); // a folder just created, still empty
   check(bad, /data-path="guides\/sub"/.test(seeded), 'the empty new folder is missing from the tree: ' + seeded);
   check(bad, /data-new="page" data-path="guides\/sub"/.test(seeded), 'the empty new folder has no buttons of its own: ' + seeded);
+  check(bad, (live.match(/data-del="page"/g) || []).length === 2 && (live.match(/data-del="folder"/g) || []).length === 1, 'trash buttons on every page and folder: ' + live);
   return bad;
 });
 
@@ -1223,13 +1224,44 @@ t('live mode creates empty pages and folders from the sidebar buttons: no overwr
   check(bad, /already exists/.test((await w.app.createEntry(f.root, false, '', 'Guides')).error || ''), 'an existing folder name was not refused');
   r = await w.app.createEntry(f.root, false, '', 'Sub');
   check(bad, r.ok === true && r.slug === 'Sub', 'folder: ' + JSON.stringify(r));
-  check(bad, w.app.newFolders.indexOf('Sub') !== -1, 'the empty folder was not remembered for the sidebar: ' + w.app.newFolders.join(','));
   r = await w.app.createEntry(f.root, true, 'Sub', 'Deep'); // into the folder that was just made
   check(bad, r.ok === true && r.slug === 'Sub/Deep' && textOf(tree.Sub['Deep.md']) === '', 'page inside the new folder: ' + JSON.stringify(r));
   for (const n of ['', '.', '..', 'a/b', 'a\\b', 'a:b', 'a*b', 'x.', '"q"'])
     check(bad, /Invalid name/.test((await w.app.createEntry(f.root, true, '', n)).error || ''), 'name ' + JSON.stringify(n) + ' should be refused');
   await w.app.forceRefresh();
   check(bad, w.app.pages['New Page'] && w.app.pages['Sub/Deep'] && w.app.pages['Sub/Deep'].content === '', 'the new pages never reached the index: ' + Object.keys(w.app.pages).join(','));
+  check(bad, w.app.dirs.indexOf('Sub') !== -1, 'the new empty folder never reached the scan: ' + w.app.dirs.join(','));
+  return bad;
+});
+
+t('live mode deletes pages and whole folders: gone from disk, index and scan', async function () {
+  const tree = { 'Home.md': page('v1'), 'Guides': { 'Basics.md': page('b1'), 'Deep': { 'In.md': page('d1') } }, 'Empty': {} }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  check(bad, w.app.dirs.indexOf('Guides') !== -1 && w.app.dirs.indexOf('Guides/Deep') !== -1 && w.app.dirs.indexOf('Empty') !== -1, 'the scan missed a folder, empty ones included: ' + w.app.dirs.join(','));
+  check(bad, /Could not delete/.test((await w.app.deleteEntry(f.root, true, 'Nope')).error || ''), 'deleting a missing page was reported as success');
+  check(bad, /Invalid name/.test((await w.app.deleteEntry(f.root, true, 'a:b')).error || ''), 'an invalid name was accepted for deletion');
+  let r = await w.app.deleteEntry(f.root, true, 'Home');
+  check(bad, r.ok === true && !tree['Home.md'], 'page: ' + JSON.stringify(r));
+  r = await w.app.deleteEntry(f.root, false, 'Guides'); // with Basics.md and Deep/In.md inside
+  check(bad, r.ok === true && !tree.Guides, 'folder with contents: ' + JSON.stringify(r));
+  r = await w.app.deleteEntry(f.root, false, 'Empty');
+  check(bad, r.ok === true && !tree.Empty, 'empty folder: ' + JSON.stringify(r));
+  await w.app.forceRefresh();
+  check(bad, Object.keys(w.app.pages).length === 0 && w.app.dirs.length === 0, 'deleted entries still around: pages=' + Object.keys(w.app.pages).join(',') + ' dirs=' + w.app.dirs.join(','));
+  return bad;
+});
+
+t('an empty folder appearing or vanishing outside changes the folder stamp, so the poll notices it', async function () {
+  const tree = { 'Home.md': page('v1') }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  const before = await w.app.folderStamp(f.root);
+  tree.Fresh = {};
+  const grew = await w.app.folderStamp(f.root);
+  check(bad, grew !== before, 'the stamp ignores an appearing empty folder');
+  delete tree.Fresh;
+  check(bad, (await w.app.folderStamp(f.root)) === before, 'the stamp ignores a vanishing empty folder');
   return bad;
 });
 

@@ -419,7 +419,7 @@ img { max-width: 100%; border-radius: 6px; }
   transition: transform 0.15s var(--ease);
 }
 .tree details[open] > summary::before { transform: rotate(90deg); }
-.tree > a, .tree .grp-body > a {
+.tree a {
   display: block;
   padding: 7px 12px;
   border-radius: 8px;
@@ -427,12 +427,15 @@ img { max-width: 100%; border-radius: 6px; }
   font-size: 14px;
   line-height: 1.45;
 }
-.tree > a:hover, .tree .grp-body > a:hover { background: var(--hover); color: var(--text); }
-.tree > a.active, .tree .grp-body > a.active {
+.tree a:hover { background: var(--hover); color: var(--text); }
+.tree a.active {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
 }
+/* live mode: page link + its trash button share one row */
+.tree .trow { display: flex; align-items: center; gap: 2px; }
+.tree .trow > a { flex: 1 1 auto; min-width: 0; }
 .tree .empty { color: var(--muted); font-size: 13px; padding: 4px 6px; }
 /* live-mode create buttons in the sidebar (renderSidebar's newBtns) */
 .tree .grp-new { float: right; display: inline-flex; gap: 2px; }

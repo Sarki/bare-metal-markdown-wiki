@@ -115,11 +115,13 @@ edited from this copy.
 
 Beside the page list, live mode shows two small **+** buttons — one above the
 tree and one on each folder: they create an empty page (name asked without
-`.md`, then the page opens) or a new folder (it appears in the tree right
-away). Names with `:` `/` `\` `*` `?` `"` `<` `>` `|`, a leading dot or a
-trailing dot are refused, as is any name already taken; a new folder's pages
-can then be created with its own **+** button. `editButton: false` hides all
-of this: no create buttons either.
+`.md`, then the page opens) or a new folder. Names with `:` `/` `\` `*` `?`
+`"` `<` `>` `|`, a leading dot or a trailing dot are refused, as is any name
+already taken. Next to every page and folder there is a small trash button:
+it deletes that file, or the whole folder and everything inside it, after a
+confirm dialog. Folders the scan finds — empty ones included — show in the
+tree even before they hold any page. `editButton: false` hides all of this:
+no create or delete buttons either.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
