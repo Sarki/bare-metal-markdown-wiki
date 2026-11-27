@@ -212,6 +212,7 @@ window.WIKI = {
   favicon: '',            // tab icon: image file next to index.html, URL, or data: URI; '' = built-in logo
   expandOnPrint: true,    // open every fold section when printing; false keeps folds as you left them
   language: '',           // interface language: 'en' or 'fr' built in; '' = your browser's language if a pack exists, else 'en'
+  // languages: { de: { save: 'Speichern', preview: 'Vorschau' } }, // your own pack: key list in app.js uiDict(); missing keys fall back to English
   // ui: { save: 'Stocker', preview: 'Aperçu' }, // replace single interface strings, any language; wins over language
   badgeColors: {     // first words of @{ badges } that get a color
     green: ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
@@ -231,15 +232,20 @@ version adds settings.
 **Interface language.** `language: 'fr'` (or `'en'`) labels every word the app shows —
 search, topbar, theme button, the editor and its conflict-resolution UI, toasts. Left at
 `''`, the browser's own language decides when a pack exists for it. Two English packs
-ship inside `app.js` (`uiDict()`); add your own without touching the app by listing keys
-in `config.js`:
+ship inside `app.js` (`uiDict()`); add your own language there — in `config.js`, which
+is yours and survives wiki upgrades:
 
 ```js
-language: 'de', // no German pack: starts English…
-ui: { save: 'Speichern', preview: 'Vorschau', edit: 'Bearbeiten' }, // …until you name the words
+language: 'de',
+languages: { de: { save: 'Speichern', preview: 'Vorschau', edit: 'Bearbeiten', /* … */ } },
 ```
 
-Missing keys always fall back to English, so a half-filled `ui` is fine. Article text
+Copy the key list from `app.js` `uiDict()`; a half-filled pack is fine, missing keys
+fall back to English. For one-off wording changes in any language there is also `ui`:
+
+```js
+ui: { save: 'Stocker' }, // wins over everything
+``` Article text
 and the markdown-syntax tooltips in the editor toolbar (the `> [!NOTE]` and `::: fold`
 snippets) are not translated — your articles are already in your language.
 

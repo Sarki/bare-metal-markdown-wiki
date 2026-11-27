@@ -109,6 +109,8 @@ const i18nCases = [ // the interface dictionary: language choice, fallbacks, con
   ['browser de (no pack) falls back to en', function () { global.WIKI = {}; Object.defineProperty(global, 'navigator', { value: { language: 'de' }, configurable: true }); delete tr.lang; return tr('save') === 'Save'; }],
   ['config language beats the browser', function () { global.WIKI = { language: 'en' }; Object.defineProperty(global, 'navigator', { value: { language: 'fr' }, configurable: true }); delete tr.lang; return tr('save') === 'Save'; }],
   ['unknown config language falls back to en', function () { global.WIKI = { language: 'zz' }; delete tr.lang; return tr('save') === 'Save'; }],
+  ['a pack in config.js languages works, missing keys fall back to en', function () { global.WIKI = { language: 'de', languages: { de: { save: 'Speichern' } } }; Object.defineProperty(global, 'navigator', { value: { language: 'de' }, configurable: true }); delete tr.lang; return tr('save') === 'Speichern' && tr.lang === 'de' && tr('cancel') === 'Cancel'; }],
+  ['owner pack beats the built-in one', function () { global.WIKI = { language: 'fr', languages: { fr: { save: 'Sauver' } } }; delete tr.lang; return tr('save') === 'Sauver' && tr('cancel') === 'Annuler'; }],
   ['config ui override wins', function () { global.WIKI = { language: 'fr', ui: { save: 'Stocker' } }; delete tr.lang; return tr('save') === 'Stocker' && tr('cancel') === 'Annuler'; }],
   ['the fr pack covers every en key', function () { const d = uiDict(); return Object.keys(d.en).every(function (k) { return k in d.fr; }); }],
 ];

@@ -144,16 +144,20 @@
       }
     };
   }
-  function tr(k) { // the word for key k: config.js `ui` overrides anything; the language is config.js `language`, else the browser's, else en
+  function tr(k) { // the word for key k: config.js `ui` wins, then a pack the owner added in config.js `languages`, then the built-in pack for the language, then en
+    var w = window.WIKI || {};
+    var langs = w.languages || {}; // owner-added packs (config.js is yours and survives upgrades); the built-in ones are in uiDict()
     if (!tr.d) tr.d = uiDict();
     if (!tr.lang) {
-      var w = window.WIKI || {};
       var l = ((w.language || (window.navigator && window.navigator.language) || '') + '').toLowerCase().slice(0, 2); // '' = auto: the browser's language, if a pack exists for it
-      tr.lang = tr.d[l] ? l : 'en';
+      tr.lang = tr.d[l] || langs[l] ? l : 'en';
     }
-    var o = (window.WIKI || {}).ui || {};
+    var o = w.ui || {};
     if (k in o) return o[k];
-    return k in tr.d[tr.lang] ? tr.d[tr.lang][k] : tr.d.en[k];
+    var mine = langs[tr.lang];
+    if (mine && k in mine) return mine[k];
+    var d = tr.d[tr.lang] || {};
+    return k in d ? d[k] : tr.d.en[k];
   }
   function translateToolbar(cm) { // EasyMDE gives its built-in toolbar buttons their name as a CSS class: swap its English hover titles for ours (the wiki's own buttons already carry their titles)
     var T = { bold: 'tbBold', italic: 'tbItalic', strikethrough: 'tbStrike', heading: 'tbHeading', link: 'tbLink', quote: 'tbQuote', code: 'tbCode', 'unordered-list': 'tbUL', 'ordered-list': 'tbOL', table: 'tbTable', undo: 'tbUndo', redo: 'tbRedo' };
