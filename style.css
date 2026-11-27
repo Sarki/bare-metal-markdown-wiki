@@ -915,6 +915,11 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .editor-toolbar .easymde-dropdown:hover { background: var(--hover); }
 .easymde-dropdown-content { background: var(--panel); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: var(--shadow); padding: 5px; }
 .editor-toolbar .easymde-dropdown-content button { height: auto; border-radius: 4px; padding: 4px 10px; }
+.editor-toolbar .easymde-dropdown-content button.note { color: #2f81f7; } /* alert menu: each entry in its alert's colour; the hexes mirror the .markdown-alert rules (they're GitHub constants, same in both themes) */
+.editor-toolbar .easymde-dropdown-content button.tip { color: #3fb950; }
+.editor-toolbar .easymde-dropdown-content button.important { color: #a371f7; }
+.editor-toolbar .easymde-dropdown-content button.warning { color: #d29922; }
+.editor-toolbar .easymde-dropdown-content button.caution { color: #f85149; }
 /* markdown colours, reusing the code-block palette above so both modes match */
 .cm-s-easymde .cm-formatting { color: var(--muted); }
 .cm-s-easymde .cm-header { color: var(--hl-title); }

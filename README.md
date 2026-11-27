@@ -118,7 +118,8 @@ headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
 and a small toolbar covers bold, italic, strikethrough, heading, link, quote,
 code, lists,
 table and undo/redo. On a row of its own below them, dropdowns for this wiki's
-own formats: **alert** (`> [!NOTE]` and friends), **fold** (foldable `::: fold`
+own formats: **alert** (`> [!NOTE]` and friends, each entry in its alert's
+colour), **fold** (foldable `::: fold`
 sections, named `::: blocks` and a two-panel `::: tabs` scaffold), **badge** and
 **button** — the last two also list the colours, each entry shown in the colour
 it produces: a badge entry inserts a keyword that renders in that colour
