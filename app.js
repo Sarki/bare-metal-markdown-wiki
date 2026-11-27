@@ -54,6 +54,7 @@
   let mode = 'bundled';
   let activeTag = '';
   let liveHandle = null;       // FileSystemDirectoryHandle, once connected
+  let newFolders = [];         // folders made in this session but still empty: no page references them, so the sidebar only learns of them from here
   let lastRefresh = 0;         // debounce for focus auto-refresh
   let liveStamp = '';
   let editing = null;
@@ -98,7 +99,11 @@
         emptyTree: 'No pages.', loadingFolder: 'Reading your folder\u2026 this can take a while on a network drive.',
         copyCode: 'Copy code snippet', noResults: '\u2014 no results \u2014',
         matchesNote: '%1 matches &mdash; showing the first %2. Edit <code>maxResults</code> in config.js to see more.',
-        edit: 'Edit',
+        edit: 'Edit', newPage: 'New page', newFolder: 'New folder',
+        promptPageName: 'New page name (without .md):', promptFolderName: 'New folder name:',
+        nameTaken: 'A file or folder with that name already exists.',
+        nameBad: 'Invalid name: empty, hidden (leading dot), or containing / \\ : * ? " < > |.',
+        couldNotCreate: 'Could not create: ', folderCreated: 'Folder created.',
         utf8Note: 'This page is not saved as UTF-8 text, so saving it here would damage its special characters. Convert it to UTF-8 in a text editor first.',
         notUtf8Error: 'someone saved this page in a format other than UTF-8 text, so saving here would damage its special characters. Your text is still in the box; convert the file to UTF-8 in a text editor, then save again.',
         preview: 'Preview', save: 'Save', cancel: 'Cancel', previewHint: 'Click outside or press Esc to close.',
@@ -127,7 +132,11 @@
         emptyTree: 'Aucune page.', loadingFolder: 'Lecture de votre dossier\u2026 cela peut \u00eatre long sur un lecteur r\u00e9seau.',
         copyCode: 'Copier le code', noResults: '\u2014 aucun r\u00e9sultat \u2014',
         matchesNote: '%1 r\u00e9sultats \u2014 voici les %2 premiers. Modifiez <code>maxResults</code> dans config.js pour en voir plus.',
-        edit: 'Modifier',
+        edit: 'Modifier', newPage: 'Nouvelle page', newFolder: 'Nouveau dossier',
+        promptPageName: 'Nom de la nouvelle page (sans .md) :', promptFolderName: 'Nom du nouveau dossier :',
+        nameTaken: 'Un fichier ou dossier porte déjà ce nom.',
+        nameBad: 'Nom invalide : vide, caché (point au début), ou contenant / \\ : * ? " < > |.',
+        couldNotCreate: 'Création impossible : ', folderCreated: 'Dossier créé.',
         utf8Note: 'Cette page n\u2019est pas encod\u00e9e en UTF-8 : la sauvegarder ici ab\u00eemerait ses caract\u00e8res sp\u00e9ciaux. Convertissez-la d\u2019abord en UTF-8 dans un \u00e9diteur de texte.',
         notUtf8Error: 'quelqu\u2019un a sauvegard\u00e9 cette page dans un format autre que du texte UTF-8 : la sauvegarder ici ab\u00eemerait ses caract\u00e8res sp\u00e9ciaux. Votre texte est toujours dans la zone de saisie ; convertissez le fichier en UTF-8 dans un \u00e9diteur de texte, puis enregistrez \u00e0 nouveau.',
         preview: 'Aper\u00e7u', save: 'Enregistrer', cancel: 'Annuler', previewHint: 'Cliquez hors de l\u2019aper\u00e7u ou appuyez sur \u00c9chap pour fermer.',
@@ -491,6 +500,10 @@
     });
     // a folder keeps whatever the user last set by hand; else it is open when it contains the
     // page on screen (or the landing page), otherwise per the foldersOpen setting
+    for (const p of newFolders) { // folders just created in this session: no page references them yet, so seed their rows here
+      let node = root;
+      for (const part of p.split('/')) { node.subs[part] = node.subs[part] || { pages: [], subs: {} }; node = node.subs[part]; }
+    }
     const shown = shownPage || (landingPage && PAGES[landingPage] ? landingPage : '');
     const activeFolder = PAGES[shown] ? (PAGES[shown].folder || '') : '';
     const isOpen = function (p) {
@@ -499,6 +512,13 @@
     };
     const linkHtml = function (s) {
       return '<a href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
+    };
+    const canCreate = !!liveHandle && editButton; // live mode writes through the folder handle; editButton: false keeps the wiki read-only
+    const newBtns = function (p) { // inline SVG keeps the icon font out, like every other control; the words ride the title/aria-label
+      const plus = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
+      const fold = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M2 4h4l1.5 1.5H14V12.5H2z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><path d="M8 7.5v4M6 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>';
+      return '<button class="newbtn" type="button" data-new="page" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr('newPage')) + '" aria-label="' + escapeHtml(tr('newPage')) + '">' + plus + '</button>' +
+        '<button class="newbtn" type="button" data-new="folder" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr('newFolder')) + '" aria-label="' + escapeHtml(tr('newFolder')) + '">' + fold + '</button>';
     };
     const orderedItems = function (node, path) { // [display name, html] pairs, per sidebarOrder
       const pages = node.pages.slice().sort(function (a, b) { return titleOf(a).localeCompare(titleOf(b)); });
@@ -511,13 +531,14 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + '</span>' : '') + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
     // root pages are listed flat (no folder); top-level folders are <details> groups
     let html = orderedItems(root, '').map(function (i) { return i[1]; }).join('');
-    if (!slugs.length) html = '<div class="empty">' + tr('emptyTree') + '</div>';
+    if (canCreate) html = '<div class="side-new">' + newBtns('') + '</div>' + html; // even an empty live folder gets this: it's how you make the first page
+    if (!slugs.length) html = '<div class="empty">' + tr('emptyTree') + '</div>' + (canCreate ? '<div class="side-new">' + newBtns('') + '</div>' : '');
     tree.innerHTML = html;
     markActive();
   }
@@ -662,6 +683,27 @@
     await w.close();
     return { ok: true, version: versionOf((await handle.getFile()).lastModified, out) };
   }
+  function validName(n) { // one path segment, no filesystem-reserved characters, not hidden and not ending in a dot
+    return /^[^\/\\:*?"<>|.][^\/\\:*?"<>|]*$/.test(n) && !n.endsWith('.');
+  }
+  async function createEntry(root, page, folder, name) { // empty Name.md or a folder under folder; { error } for a bad or taken name
+    if (!validName(name)) return { error: tr('nameBad') };
+    let dir = root;
+    for (const part of folder ? folder.split('/') : []) dir = await dir.getDirectoryHandle(part);
+    const nf = function (e) { return ((e && e.name) + ' ' + (e && e.message)).indexOf('NotFound') !== -1; }; // real API throws DOMException NotFoundError; the test stubs a plain Error
+    try {
+      if (page) {
+        try { await dir.getFileHandle(name + '.md'); return { error: tr('nameTaken') }; }
+        catch (e) { if (!nf(e)) throw e; await dir.getFileHandle(name + '.md', { create: true }); }
+      } else {
+        try { await dir.getDirectoryHandle(name); return { error: tr('nameTaken') }; }
+        catch (e) { if (!nf(e)) throw e; await dir.getDirectoryHandle(name, { create: true }); }
+      }
+    } catch (e) { return { error: tr('couldNotCreate') + e.message }; }
+    const slug = (folder ? folder + '/' : '') + name; // slug form, no .md — that's what routes and PAGES use
+    if (!page) newFolders.push(slug); // an empty folder holds no page for the index to find: the sidebar renders it from this list
+    return { ok: true, slug: slug };
+  }
   function splitLines(text) { return text.match(/[^\n]*\n|[^\n]+$/g) || []; }
   function matchLines(a, b) {
     const match = new Array(a.length).fill(-1);
@@ -762,7 +804,7 @@
       if (loading !== mine || editing) return false;
       if (h === liveHandle && live.stamp === liveStamp) return true; // nothing changed: no redraw, so a folder you are browsing survives focus refreshes and live polls
       const scroll = h === liveHandle ? el('content').scrollTop : 0;
-      liveHandle = h; applyLive(live); mode = 'live';
+      liveHandle = h; newFolders = []; applyLive(live); mode = 'live';
       buildIndex(); renderTags(); setMode('live'); showPage(shownPage);
       el('content').scrollTop = scroll;
       return true;
@@ -783,7 +825,7 @@
   }
   function leaveLive() { // the way back out: bundled snapshot now, and this wiki forgets the folder so the next open does not quietly live-render it again
     if (editing || mode !== 'live') return;
-    liveHandle = null; liveStamp = ''; mode = 'bundled';
+    liveHandle = null; newFolders = []; liveStamp = ''; mode = 'bundled';
     IDB.del(dirKey).catch(function () {}); // best effort: if IDB is broken, the cost is just the folder reopening next time
     loadBundled();
     buildIndex(); renderTags(); renderSidebar(); setMode('bundled');
@@ -1120,6 +1162,19 @@
     el('tree').addEventListener('click', function (e) { // clicking the current page's entry: same hash means no hashchange, so scroll the article back to the top
       const a = e.target.closest('a[data-slug]');
       if (a && a.dataset.slug === shownPage) { e.preventDefault(); closeNav(); el('content').scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
+    el('tree').addEventListener('click', async function (e) { // live-mode + buttons: an empty page (then open it) or a folder, under the button's data-path
+      const b = e.target.closest('[data-new]');
+      if (!b) return;
+      e.preventDefault(); // the folder-row buttons sit inside <summary>: the click must not toggle the folder open/closed
+      const page = b.getAttribute('data-new') === 'page';
+      const name = ((window.prompt(page ? tr('promptPageName') : tr('promptFolderName'), '') || '') + '').trim();
+      if (!name) return;
+      const r = await createEntry(liveHandle, page, b.getAttribute('data-path') || '', name);
+      if (r.error) { toast(r.error); return; }
+      await refreshLive();
+      if (page) location.hash = '#' + encodeURIComponent(r.slug);
+      else toast(tr('folderCreated'));
     });
     el('tocRail').addEventListener('click', tocScroll);
     // narrow screens: the hamburger opens the sidebar as an overlay drawer

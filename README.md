@@ -113,6 +113,14 @@ permission to write to the folder. Set `editButton: false` in `config.js` to
 hide the button: the wiki still reads the live folder, it just cannot be
 edited from this copy.
 
+Beside the page list, live mode shows two small **+** buttons — one above the
+tree and one on each folder: they create an empty page (name asked without
+`.md`, then the page opens) or a new folder (it appears in the tree right
+away). Names with `:` `/` `\` `*` `?` `"` `<` `>` `|`, a leading dot or a
+trailing dot are refused, as is any name already taken; a new folder's pages
+can then be created with its own **+** button. `editButton: false` hides all
+of this: no create buttons either.
+
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
 and a small toolbar covers bold, italic, strikethrough, heading, link, quote,

@@ -4,7 +4,7 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
-  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar'].map(grab).join('\n');
+  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar', 'validName', 'createEntry'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
@@ -12,7 +12,7 @@ const factory = (0, eval)(`(function (env) {
   const imgExtRe = /\\.png$/i, wikiName = 'W', dirKey = 'dir /w/';
   const IDB = { set: async function (k) { env.savedKey = k; }, del: async function () { env.forgot = true; } };
   function loadBundled() { RAW = env.bundled || []; IMAGES = {}; } // env.bundled is the stand-in for data.js's PAGES_BUNDLED
-  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', toastTimer = null;
+  let RAW = [], PAGES = {}, IMAGES = {}, STEM = {}, mode = 'bundled', liveHandle = null, newFolders = [], lastRefresh = 0, liveStamp = '', editing = null, shownPage = '', loading = null, tocHtml = '', toastTimer = null;
   const setTimeout = function () { return 0; }, clearTimeout = function () {}; // the toast's 2.5s auto-hide must not keep the test process awake
   let landingPage = env.landingPage || '';
   function closeNav() {} function renderSidebar() {} function renderTags() {} function placeToc() {} function markActive() {}
@@ -32,10 +32,10 @@ const factory = (0, eval)(`(function (env) {
   ${GRABBED}
   return {
     route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder, leaveLive: leaveLive,
-    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor,
+    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor, createEntry: createEntry,
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
-    get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }
+    get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }, get newFolders() { return newFolders; }
   };
 })`);
 
@@ -50,7 +50,7 @@ function fakeFolder(name, tree) {
       kind: 'directory',
       async queryPermission() { return 'granted'; },
       async requestPermission() { return 'granted'; },
-      async getDirectoryHandle(n) { if (!node[n] || isFile(node[n])) throw new Error('NotFoundError'); return dir(node[n], prefix + n + '/'); },
+      async getDirectoryHandle(n, opts) { if (!node[n]) { if (!opts || !opts.create) throw new Error('NotFoundError'); node[n] = {}; } if (isFile(node[n])) throw new Error('NotFoundError'); return dir(node[n], prefix + n + '/'); },
       async getFileHandle(n, opts) {
         if (!node[n]) { if (!opts || !opts.create) throw new Error('NotFoundError'); node[n] = page(''); }
         return file(node[n], n, prefix + n);
@@ -1143,11 +1143,11 @@ t('a save of A/Home that lands after a switch to B does not put A\'s text into B
   return bad;
 });
 
-function sidebarHtml(shown, hash, treeOpen) {
+function sidebarHtml(shown, hash, treeOpen, live, folders) {
   const tree = { innerHTML: '' };
   const fn = grab('taggedSlugs') + grab('renderSidebar');
-  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; let treeOpen = arguments[3]; function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
-  f(tree, { hash: hash }, shown, treeOpen || null);
+  const f = (0, eval)('(function (tree, location, shownPage) { const PAGES = { "guides/setup": { folder: "guides", tags: [], title: "Setup" }, Home: { folder: "", tags: [], title: "Home" } }; const activeTag = "", landingPage = "", foldersOpen = false, sidebarOrder = "files"; let treeOpen = arguments[3]; let liveHandle = arguments[4] ? { name: "A" } : null; let newFolders = arguments[5] || []; const editButton = true; function tr(k) { return k; } function el() { return tree; } function escapeHtml(s) { return s; } function titleOf(s) { return PAGES[s].title; } function markActive() {} ' + fn + ' renderSidebar(); })');
+  f(tree, { hash: hash }, shown, treeOpen || null, live, folders || []);
   return tree.innerHTML;
 }
 t('a redraw after a footnote click keeps the shown page\'s folder open in the sidebar', async function () {
@@ -1164,6 +1164,18 @@ t('folders opened or closed by hand survive every sidebar redraw', async functio
   check(bad, closed.includes('data-path="guides"') && !/data-path="guides" open/.test(closed), 'a hand-closed folder reopened: ' + closed);
   const opened = sidebarHtml('Home', '#Home', { guides: true }); // guides holds no shown page: normally collapsed
   check(bad, /<details class="grp" data-path="guides" open>/.test(opened), 'a hand-opened folder collapsed again: ' + opened);
+  return bad;
+});
+
+t('bundled mode has no create buttons; live mode has them at the root and on every folder', async function () {
+  const bad = [];
+  check(bad, !/data-new/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
+  const live = sidebarHtml('Home', '#Home', null, true);
+  check(bad, (live.match(/data-new="page"/g) || []).length === 2 && (live.match(/data-new="folder"/g) || []).length === 2, 'create buttons at root + on the folder: ' + live);
+  check(bad, /data-new="page" data-path="guides"/.test(live), 'no folder-scoped page button: ' + live);
+  const seeded = sidebarHtml('Home', '#Home', null, true, ['guides/sub']); // a folder just created, still empty
+  check(bad, /data-path="guides\/sub"/.test(seeded), 'the empty new folder is missing from the tree: ' + seeded);
+  check(bad, /data-new="page" data-path="guides\/sub"/.test(seeded), 'the empty new folder has no buttons of its own: ' + seeded);
   return bad;
 });
 
@@ -1199,6 +1211,26 @@ t('the only page is saved, then someone removes it: the next polls stop showing 
   delete tree['Home.md'];
   await w.app.pollLive(); await w.app.pollLive();
   return w.screen().startsWith('NOTFOUND') ? [] : ['the folder is empty but after two polls the screen shows: ' + w.screen()];
+});
+
+t('live mode creates empty pages and folders from the sidebar buttons: no overwrite, no path games', async function () {
+  const tree = { 'Home.md': page('v1'), 'Guides': { 'Basics.md': page('b1') } }; const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  let r = await w.app.createEntry(f.root, true, '', 'New Page');
+  check(bad, r.ok === true && r.slug === 'New Page' && tree['New Page.md'] && textOf(tree['New Page.md']) === '', 'root page: ' + JSON.stringify(r));
+  check(bad, /already exists/.test((await w.app.createEntry(f.root, true, '', 'Home')).error || ''), 'an existing page could be overwritten');
+  check(bad, /already exists/.test((await w.app.createEntry(f.root, false, '', 'Guides')).error || ''), 'an existing folder name was not refused');
+  r = await w.app.createEntry(f.root, false, '', 'Sub');
+  check(bad, r.ok === true && r.slug === 'Sub', 'folder: ' + JSON.stringify(r));
+  check(bad, w.app.newFolders.indexOf('Sub') !== -1, 'the empty folder was not remembered for the sidebar: ' + w.app.newFolders.join(','));
+  r = await w.app.createEntry(f.root, true, 'Sub', 'Deep'); // into the folder that was just made
+  check(bad, r.ok === true && r.slug === 'Sub/Deep' && textOf(tree.Sub['Deep.md']) === '', 'page inside the new folder: ' + JSON.stringify(r));
+  for (const n of ['', '.', '..', 'a/b', 'a\\b', 'a:b', 'a*b', 'x.', '"q"'])
+    check(bad, /Invalid name/.test((await w.app.createEntry(f.root, true, '', n)).error || ''), 'name ' + JSON.stringify(n) + ' should be refused');
+  await w.app.forceRefresh();
+  check(bad, w.app.pages['New Page'] && w.app.pages['Sub/Deep'] && w.app.pages['Sub/Deep'].content === '', 'the new pages never reached the index: ' + Object.keys(w.app.pages).join(','));
+  return bad;
 });
 
 t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its snippet with the caret inside', async function () {
