@@ -945,7 +945,7 @@
     if (!editing) return;
     const box = el('editPreviewBox');
     if (!box.hidden) { box.hidden = true; return; }
-    box.innerHTML = '<p class="edit-preview-hint">Click outside or press Esc to close.</p>' + renderMarkdown(draftText(editing));
+    box.innerHTML = '<p class="edit-preview-hint">Click outside or press Esc to close.</p>' + renderMarkdown(parseFrontmatter(draftText(editing)).body); // strip the front matter first, exactly like build.sh's snapshot does — raw, its --- lines come out as setext headings
     fixMdLinks(box, (PAGES[editing.slug] || {}).folder || '');
     highlightCode(box); runKaTeX(box); runMermaid(box);
     box.hidden = false;
