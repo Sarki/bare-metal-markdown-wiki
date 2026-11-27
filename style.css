@@ -888,7 +888,8 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   z-index: 1;
 }
 .breadcrumbs:has(+ .editor) { position: static; } /* while editing, the toolbar takes the pinned top spot; the path line scrolls away instead of stacking */
-.editor-toolbar button { color: var(--text); padding: 0 7px; min-width: 30px; } /* word labels need air, unlike the icon fonts other wikis ship */
+.editor-toolbar button { vertical-align: top; padding: 0 7px; min-width: 30px; } /* top, not baseline: the SVG-labelled button's taller content box would otherwise nudge it off the row. Word labels need air, unlike the icon fonts other wikis ship */
+:where(.editor-toolbar) button { color: var(--text); } /* :where keeps this at zero specificity so the badge- and btn- classes the colour menus carry (app.js) can paint their own entries */
 .editor-toolbar button:hover { background: var(--hover); border-color: var(--border-strong); }
 .editor-toolbar button.active { background: var(--field); border-color: var(--border-strong); } /* EasyMDE lights up toggled buttons; vendor hardcodes a glaring #bebebe */
 .editor-toolbar button::before { font: 600 12px/1 system-ui, sans-serif; }
@@ -906,10 +907,10 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
 .editor-toolbar button.redo::before { content: "\21b7"; }
 .editor-toolbar button.alert::before { content: "alert \25be"; }
 .editor-toolbar button.fold::before { content: "fold \25be"; }
-.editor-toolbar button.tabs::before { content: "tabs"; }
 .editor-toolbar button.badge::before { content: "badge \25be"; }
 .editor-toolbar button.button::before { content: "button \25be"; }
 .editor-toolbar .easymde-dropdown-content button::before { content: attr(title); } /* dropdown items label themselves: title is already the word */
+.editor-toolbar button.wiki-break { display: block; height: 0; min-width: 0; padding: 0; border: 0; pointer-events: none; } /* invisible line break (the toolbar is inline flow, so a block child starts a new line): the wiki buttons below it always form one tidy row instead of being split by the wrap */
 .editor-toolbar .easymde-dropdown { background: var(--panel); border: 1px solid transparent; border-radius: 3px; padding: 0 7px; } /* vendor dropdown styling hardcodes white (border + corner-triangle gradient), squares the corners and pads nothing */
 .editor-toolbar .easymde-dropdown:hover { background: var(--hover); }
 .easymde-dropdown-content { background: var(--panel); border: 1px solid var(--border-strong); border-radius: 6px; box-shadow: var(--shadow); padding: 5px; }

@@ -117,13 +117,14 @@ That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
 and a small toolbar covers bold, italic, strikethrough, heading, link, quote,
 code, lists,
-table and undo/redo, plus dropdowns for this wiki's own formats: **alert**
-(`> [!NOTE]` and friends), **fold** (foldable `::: fold` sections and named
-`::: blocks`), **tabs** (a ready-made two-panel `::: tabs` scaffold), **badge**
-and **button** — the last two also list the colours: a badge entry inserts a
-keyword that renders in that colour (anything you type after it keeps the
-colour, and entries follow the `badgeColors` list from `config.js`), a button
-entry adds the `{color}` suffix. Each inserts the snippet at the
+table and undo/redo. On a row of its own below them, dropdowns for this wiki's
+own formats: **alert** (`> [!NOTE]` and friends), **fold** (foldable `::: fold`
+sections, named `::: blocks` and a two-panel `::: tabs` scaffold), **badge** and
+**button** — the last two also list the colours, each entry shown in the colour
+it produces: a badge entry inserts a keyword that renders in that colour
+(anything you type after it keeps the colour, and entries follow the
+`badgeColors` list from `config.js`), a button entry adds the `{color}` suffix.
+Each inserts the snippet at the
 caret, wrapping whatever text you had selected. Its buttons show words instead
 of icons because the wiki
 ships no icon font, and there is no preview button — EasyMDE's own preview uses

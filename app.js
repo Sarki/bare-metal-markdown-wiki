@@ -734,25 +734,23 @@
         { name: 'warning', title: 'warning', b: '\n\n> [!WARNING]\n> ', a: '\n', then: 'markdown-alert-warning' },
         { name: 'caution', title: 'caution', b: '\n\n> [!CAUTION]\n> ', a: '\n', then: 'markdown-alert-caution' },
       ] },
-      { name: 'fold', title: 'Foldable or named block', items: [
+      { name: 'fold', title: 'Foldable sections, named blocks, tab panels', items: [ // tabs lives in here too: four loose buttons pushed the toolbar onto a second row
         { name: 'fold-closed', title: 'closed', b: '\n\n::: fold Title\n', a: '\n\n:::\n', then: '<details class="fold">' },
         { name: 'fold-open', title: 'open', b: '\n\n::: fold! Title\n', a: '\n\n:::\n', then: '<details class="fold" open' },
         { name: 'block', title: 'block', b: '\n\n::: name\n', a: '\n\n:::\n', then: 'class="container name"' },
-      ] },
-      { name: 'tabs', title: 'Tabbed panels', items: [
-        { name: 'tabs', title: 'Tabbed panels', b: '\n\n::: tabs\n::: tab: First\n', a: '\n:::\n::: tab: Second\n\n:::\n:::\n', then: 'class="container tabs"' },
+        { name: 'tabs', title: 'tabs', b: '\n\n::: tabs\n::: tab: First\n', a: '\n:::\n::: tab: Second\n\n:::\n:::\n', then: 'class="container tabs"' },
       ] },
       { name: 'badge', title: 'Badge pill', items: [ // one item per colour the renderer applies right now: config.js badgeColors included
         { name: 'badge-plain', title: 'plain', b: '@{', a: '}', then: 'class="badge"' },
       ].concat(Object.keys(bcols).map(function (c) {
         var word = (bcols[c] || [])[0];
         if (!word) return null; // a config colour with no keywords cannot colour anything
-        return { name: 'badge-' + c, title: c, b: '@{' + word, a: '}', then: 'badge--' + c };
+        return { name: 'badge-' + c, title: c, className: 'badge--' + c, b: '@{' + word, a: '}', then: 'badge--' + c }; // the renderer's own class rides along, so the menu entry wears the wiki's colour (user.css included)
       }).filter(Boolean)) },
       { name: 'button', title: 'Button link', items: [
         { name: 'button-plain', title: 'plain', b: '@[', a: '](url)', then: 'class="btn"' },
       ].concat((window.MditExtras ? window.MditExtras.buttonColors : []).map(function (c) {
-        return { name: 'button-' + c, title: c, b: '@[', a: '](url){' + c + '}', then: 'btn--' + c };
+        return { name: 'button-' + c, title: c, className: 'btn--' + c, b: '@[', a: '](url){' + c + '}', then: 'btn--' + c };
       })) },
     ];
   }
@@ -764,7 +762,7 @@
   }
   function wikiButtons() { // EasyMDE's own custom-button + dropdown-group config, so vendor/easymde.min.js stays unpatched and swappable
     return wikiSnippets().map(function (g) {
-      const kids = g.items.map(function (it) { return { name: it.name, title: it.title, action: function (ed) { insertSnip(ed.codemirror, it); } }; });
+      const kids = g.items.map(function (it) { return { name: it.name, title: it.title, className: it.className, action: function (ed) { insertSnip(ed.codemirror, it); } }; });
       return kids.length === 1 ? kids[0] : { name: g.name, title: g.title, children: kids };
     });
   }
@@ -773,7 +771,8 @@
     return new window.EasyMDE({
       element: ta, spellChecker: false, status: false, lineWrapping: true, minHeight: '50vh', autofocus: true,
       autoDownloadFontAwesome: false,
-      toolbar: ['bold', 'italic', 'strikethrough', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo', '|'].concat(wikiButtons())
+      toolbar: ['bold', 'italic', 'strikethrough', 'heading', '|', 'link', 'quote', 'code', '|', 'unordered-list', 'ordered-list', 'table', '|', 'undo', 'redo',
+        { name: 'wiki-break', title: '', action: function () {} }].concat(wikiButtons()) // the invisible break: the wiki buttons always start on their own row, so they never get cut in half by the wrap (and no separator dangles at the row end)
     });
   }
   function draftText(ed) { return ed.cm ? ed.cm.value() : el('editText').value; }
