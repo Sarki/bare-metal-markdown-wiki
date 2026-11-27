@@ -740,7 +740,7 @@
         { name: 'block', title: 'block', b: '\n\n::: name\n', a: '\n\n:::\n', then: 'class="container name"' },
         { name: 'tabs', title: 'tabs', b: '\n\n::: tabs\n::: tab: First\n', a: '\n:::\n::: tab: Second\n\n:::\n:::\n', then: 'class="container tabs"' },
       ] },
-      { name: 'badge', title: 'Badge pill', items: [ // one item per colour the renderer applies right now: config.js badgeColors included
+      { name: 'badges', title: 'Badge pill', items: [ // 'badges', not 'badge': EasyMDE puts the name on the button as a class, and the wiki's own .badge pill rules would grey it out and shrink its font. the colour items keep badge--x classes on purpose: that's what paints them
         { name: 'badge-plain', title: 'plain', b: '@{', a: '}', then: 'class="badge"' },
       ].concat(Object.keys(bcols).map(function (c) {
         var word = (bcols[c] || [])[0];

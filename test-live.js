@@ -1189,8 +1189,8 @@ t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its sn
   api.makeEditor({});
   const wiki = ((env.opts || {}).toolbar || []).filter(function (b) { return typeof b === 'object' && b.name !== 'wiki-break'; }); // wiki-break is the invisible row break, not a button
   const bad = [];
-  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,badge,button', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
-  const badge = wiki.filter(function (b) { return b.name === 'badge'; })[0];
+  check(bad, wiki.map(function (b) { return b.name; }).join(',') === 'alert,fold,badges,button', 'wiki buttons: ' + wiki.map(function (b) { return b.name; }).join(','));
+  const badge = wiki.filter(function (b) { return b.name === 'badges'; })[0];
   check(bad, badge.children.map(function (b) { return b.title; }).join(',') === 'plain,mauve', 'the badge menu ignores the user badgeColors config: ' + badge.children.map(function (b) { return b.title; }).join(','));
   check(bad, badge.children[1].className === 'badge--mauve', 'the badge entry does not carry the renderer class that colours it: ' + badge.children[1].className);
   const btn = wiki.filter(function (b) { return b.name === 'button'; })[0];
