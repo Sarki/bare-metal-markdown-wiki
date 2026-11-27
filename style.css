@@ -883,7 +883,11 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
   border-color: var(--border-strong);
   border-bottom: none;
   border-radius: var(--radius) var(--radius) 0 0;
+  position: sticky; /* editing a long file: the formatting bar stays under the topbar instead of scrolling away, same --padt trick as .editor-bar; released when the editor ends */
+  top: calc(0px - var(--padt, 0px));
+  z-index: 1;
 }
+.breadcrumbs:has(+ .editor) { position: static; } /* while editing, the toolbar takes the pinned top spot; the path line scrolls away instead of stacking */
 .editor-toolbar button { color: var(--text); }
 .editor-toolbar button:hover { background: var(--hover); border-color: var(--border-strong); }
 .editor-toolbar button::before { font: 600 12px/1 system-ui, sans-serif; }
