@@ -213,6 +213,8 @@ window.WIKI = {
     red: ['error', 'failed', 'fails', 'failing', 'broken', 'danger', 'urgent', 'deprecated'],
     blue: ['info', 'new', 'beta', 'note', 'preview'],
     purple: ['alpha', 'experimental', 'planned', 'idea']
+    // your own color: words + a color, pill CSS generated for you:
+    // mauve: { words: ['plum', 'lilac'], color: '#a371f7' }
   }
 };
 ```
@@ -295,7 +297,7 @@ Any Markdown inside, click the title to open or close.
 :::
 ```
 
-Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block):
+Inline badges (small pill, anything between `@{` and `}`; known statuses like `draft` or `stable` get a color — word list in the settings block). Add your own colors there: `mauve: { words: ['plum', 'lilac'], color: '#a371f7' }` styles the pill (tinted background and border like the built-ins), shows up in the editor's **badge** menu, and colours the menu entry too; a name-only word list stays the gray pill unless you style `.badge--name` in `user.css`):
 
 ```markdown
 This page is @{draft} and the plugin is @{v1.0} stable.

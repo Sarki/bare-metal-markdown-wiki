@@ -222,7 +222,16 @@
     purple: ['alpha', 'experimental', 'planned', 'idea']
   };
 
-  function effectiveBadgeColors() { return (global.WIKI && global.WIKI.badgeColors) || DEFAULT_BADGE_COLORS; }
+  function effectiveBadgeColors() { // entries are a word list or { words, color }; consumers always see plain word lists, the colour rides along via badgeCustomColors
+    var C = (global.WIKI && global.WIKI.badgeColors) || DEFAULT_BADGE_COLORS, out = {};
+    for (var k in C) { var v = C[k]; out[k] = Array.isArray(v) ? v : (v && v.words) || []; }
+    return out;
+  }
+  function badgeCustomColors() { // user colours only: the built-in ones live in style.css; app.js turns these into .badge--<name> pill CSS
+    var C = (global.WIKI && global.WIKI.badgeColors) || {}, out = {};
+    for (var k in C) { var v = C[k]; if (v && !Array.isArray(v) && v.color) out[k] = v.color; }
+    return out;
+  }
 
   function badges(md) {
     var COLORS = effectiveBadgeColors();
@@ -284,5 +293,5 @@
   }
 
   global.MditExtras = { container: container, alerts: alerts, tabs: tabs, badges: badges, buttons: buttons,
-    badgeColors: effectiveBadgeColors, buttonColors: BUTTON_COLORS }; // app.js builds the editor's colour menus from these, so user config shows up there too
+    badgeColors: effectiveBadgeColors, badgeCustomColors: badgeCustomColors, buttonColors: BUTTON_COLORS }; // app.js builds the editor's colour menus from these, so user config shows up there too
 })(window);

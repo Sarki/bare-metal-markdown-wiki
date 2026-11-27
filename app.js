@@ -32,6 +32,13 @@
   const defValidateLink = md.validateLink.bind(md); // markdown-it blocks non-http schemes for links AND images; let file:// through (works when the wiki itself runs on file://, browsers block it over http — nothing more we can do)
   md.validateLink = function (u) { return /^file:\/\/\//i.test(u) || defValidateLink(u); };
   if (window.MditExtras) { md.use(MditExtras.container); md.use(MditExtras.alerts); md.use(MditExtras.tabs); md.use(MditExtras.badges); md.use(MditExtras.buttons); } // ::: containers, > [!NOTE] alerts, ::: tabs, @{ badges }, @[button links]
+  function injectBadgeColors() { // user badge colours from config.js ({ words: [...], color: '#hex' }): paste the same pill CSS style.css defines for the built-ins, so rendered badges AND the editor menu entries wear it
+    if (!window.MditExtras) return;
+    var C = window.MditExtras.badgeCustomColors(), css = '';
+    for (var k in C) css += '.badge--' + k + ' { color: ' + C[k] + '; background: color-mix(in srgb, ' + C[k] + ' 12%, transparent); border-color: color-mix(in srgb, ' + C[k] + ' 40%, transparent); }\n';
+    if (css) { var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); }
+  }
+  injectBadgeColors();
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
   function currentMermaidTheme() { return usesDarkScheme(getComputedStyle(document.documentElement).colorScheme, systemDark.matches) ? 'dark' : 'default'; }
   function initMermaid(theme) { if (window.mermaid) { try { mermaid.initialize({ startOnLoad: false, theme: theme }); } catch (e) {} } }

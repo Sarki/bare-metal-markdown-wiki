@@ -1211,6 +1211,24 @@ t('the WYSIWYG toolbar carries the wiki-only buttons and each one inserts its sn
   return bad;
 });
 
+t('a user badge colour from config.js gets pill CSS injected so it really shows', function () {
+  const bad = [];
+  const added = [];
+  const env = {
+    MditExtras: { badgeCustomColors: function () { return { mauve: '#a371f7' }; } },
+    document: { createElement: function () { return { textContent: '' }; }, head: { appendChild: function (s) { added.push(s.textContent); } } }
+  };
+  (0, eval)('(function (window, document) { ' + grab('injectBadgeColors') + '; injectBadgeColors(); })')(env, env.document);
+  check(bad, added.length === 1 && added[0].indexOf('.badge--mauve { color: #a371f7;') === 0, 'no pill CSS injected for the user colour: ' + JSON.stringify(added));
+  check(bad, (added[0] || '').indexOf('color-mix(in srgb, #a371f7 12%') > 0, 'the injected background does not follow the built-in badge formula: ' + added[0]);
+  const quiet = [];
+  const qdoc = { createElement: function () { quiet.push('style'); return { textContent: '' }; }, head: { appendChild: function () {} } };
+  (0, eval)('(function (window, document) { ' + grab('injectBadgeColors') + '; injectBadgeColors(); })')({ MditExtras: { badgeCustomColors: function () { return {}; } } }, qdoc);
+  (0, eval)('(function (window, document) { ' + grab('injectBadgeColors') + '; injectBadgeColors(); })')({}, qdoc);
+  check(bad, quiet.length === 0, 'a style tag was injected even though there are no user colours (or no MditExtras at all)');
+  return bad;
+});
+
 (async function () {
   let bad = 0;
   for (const [name, fn] of tests) {

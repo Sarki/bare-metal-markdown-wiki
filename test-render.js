@@ -109,6 +109,14 @@ md3.use(MditExtras.badges);
 const o3 = md3.render('@{wip} @{WIP} @{Wip thing}');
 if ((o3.match(/badge--yellow/g) || []).length === 3) pass++;
 else { fail++; console.error('FAIL: badgeColors case-insensitive\n  out:  ' + o3); }
+// user-defined colour: { words, color } entries get a colour too, and the colour is exported for app.js to inject as pill CSS
+global.WIKI = { badgeColors: { mauve: { words: ['plum', 'lilac'], color: '#a371f7' } } };
+const md4 = new MarkdownIt({ html: true });
+md4.use(MditExtras.badges);
+const o4 = md4.render('@{plum} @{lilac} @{green}');
+const ccols = MditExtras.badgeCustomColors();
+if (o4.includes('badge--mauve">plum') && o4.includes('badge--mauve">lilac') && !o4.includes('badge--mauve">green') && ccols.mauve === '#a371f7' && Object.keys(ccols).length === 1) pass++;
+else { fail++; console.error('FAIL: user-defined badge colour ({ words, color })\n  out:  ' + o4 + '\n  colours: ' + JSON.stringify(ccols)); }
 // editor guard: every snippet the WYSIWYG toolbar inserts must actually render as its feature —
 // keeps app.js wikiSnippets() in sync with this renderer's syntax
 global.WIKI = undefined; // build the menu from the default colours, not the setting tests above
@@ -122,5 +130,5 @@ for (const g of snippetGroups) for (const it of g.items) {
   if (out.includes(it.then)) pass++;
   else { fail++; console.error('FAIL: editor snippet ' + it.name + '\n  in:   ' + JSON.stringify(input) + '\n  out:  ' + out + '\n  want: ' + it.then); }
 }
-console.log('test-render: ' + pass + '/' + (cases.length + 2 + snipN) + ' passed');
+console.log('test-render: ' + pass + '/' + (cases.length + 3 + snipN) + ' passed');
 process.exit(fail ? 1 : 0);

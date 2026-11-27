@@ -36,7 +36,9 @@ window.WIKI = {
   // brandIcon: '📚', // left out = the built-in logo; any emoji/character replaces it; '' hides it; for an image, go to user.css
   favicon: '', // browser tab icon: image file next to index.html (keep it — it's yours, like this file), any URL, or a data: URI; '' = the built-in logo
   expandOnPrint: true, // printing opens every fold section so nothing is hidden on paper; false keeps folds as you left them
-  // first word of a badge → its color, matched case-insensitively; unknown words stay the gray pill
+  // first word of a badge → its color, matched case-insensitively; unknown words stay the gray pill.
+  // your own color: give the words plus a color, and the pill CSS is made for you (rendered badges and the editor menu):
+  // badgeColors: { ...above..., mauve: { words: ['plum', 'lilac'], color: '#a371f7' } }
   badgeColors: {
     green:  ['stable', 'ok', 'done', 'active', 'success', 'passed', 'shipped', 'final'],
     yellow: ['draft', 'wip', 'todo', 'pending', 'review', 'progress', 'untested'],
