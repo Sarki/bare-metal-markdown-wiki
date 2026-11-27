@@ -5,6 +5,7 @@ tags: meta, getting-started
 
 # Home
 
+
 Welcome to your local wiki. This whole thing is **offline**: a static HTML frame
 ([`index.html`](index.html)) that reads markdown and renders it in the browser. No server,
 no internet after the build.
