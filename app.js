@@ -941,15 +941,14 @@
     editMsg('Their changes are merged into your text. Check it, then Save.');
   }
   function cancelEditor() { showPage(shownPage); lastRefresh = 0; refreshLive(); }
-  function previewEditor() { // toggle: the draft rendered through the wiki's own engine, so what you preview is what saving produces (EasyMDE's built-in preview speaks a different markdown flavour and would lie about [[links]], badges, ::: — see makeEditor)
+  function previewEditor() { // toggle: the draft rendered through the wiki's own engine as a modal over everything, so what you preview is what saving produces (EasyMDE's built-in preview speaks a different markdown flavour and would lie about [[links]], badges, ::: — see makeEditor)
     if (!editing) return;
     const box = el('editPreviewBox');
     if (!box.hidden) { box.hidden = true; return; }
-    box.innerHTML = renderMarkdown(draftText(editing));
+    box.innerHTML = '<p class="edit-preview-hint">Click outside or press Esc to close.</p>' + renderMarkdown(draftText(editing));
     fixMdLinks(box, (PAGES[editing.slug] || {}).folder || '');
     highlightCode(box); runKaTeX(box); runMermaid(box);
     box.hidden = false;
-    box.scrollIntoView();
   }
 
   // ---------- init ----------
@@ -977,6 +976,7 @@
     el('searchKey').textContent = mac ? '\u2318K' : 'Ctrl K';
     document.addEventListener('keydown', function (e) {
       if (isSearchShortcut(e, mac)) { e.preventDefault(); el('search').focus(); el('search').select(); }
+      else if (e.key === 'Escape' && editing && !el('editPreviewBox').hidden) previewEditor(); // Esc closes the preview modal
     });
     el('search').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.target.value = ''; doSearch(''); } });
     el('search').addEventListener('click', function (e) { if (e.target.value) doSearch(e.target.value); }); // query still in the box → panel comes back
@@ -997,6 +997,7 @@
       }
       const pa = e.target.closest('#editPreviewBox a'); // wiki links in the preview would route() away and close the editor; the box is a preview, so its links stay dead
       if (pa) { e.preventDefault(); return; }
+      if (e.target.id === 'editPreviewBox') { previewEditor(); return; } // a click on the box itself or its ::before backdrop closes the preview modal (same idiom as the drawer backdrop)
       const ed = e.target.closest('[data-edit]');
       if (ed) {
         if (ed.dataset.edit === 'pick') pickConflict(Number(ed.dataset.k), ed.dataset.side);

@@ -131,9 +131,10 @@ of icons because the wiki
 ships no icon font, and EasyMDE's own preview button is left off — its preview
 uses a different Markdown engine, so `[[links]]` and `:::` boxes would come out
 wrong there. Instead the bottom bar has a **Preview** button (left of Save):
-it renders your draft with the wiki's very own engine, so the preview is
-exactly what saving would produce, `[[links]]`, badges and `:::` boxes
-included; click it again to hide the preview. Nothing is fetched from the internet. The **Save** and **Cancel**
+it renders your draft with the wiki's very own engine as a modal over the
+whole window, so the preview is exactly what saving would produce, `[[links]]`,
+badges and `:::` boxes included; close it by clicking outside it, pressing Esc
+or clicking Preview again. Nothing is fetched from the internet. The **Save** and **Cancel**
 buttons stay pinned to the bottom of the window while you scroll a long file,
 and so does the formatting toolbar, right under the top bar.
 

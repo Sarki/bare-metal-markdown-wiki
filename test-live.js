@@ -147,7 +147,7 @@ test('Preview renders the draft through the wiki engine and toggles off; it neve
   check(bad, /id="editPreviewBox"[^>]*hidden/.test(w.screen()), 'the editor markup lost its hidden preview box');
   const box = w.env.el('editPreviewBox'); box.hidden = true; // the markup ships the box hidden
   w.app.previewEditor();
-  check(bad, box.innerHTML === 'MD[draft [[X]]]', 'the box did not get the draft through the wiki engine: ' + JSON.stringify(box.innerHTML));
+  check(bad, /Click outside/.test(box.innerHTML) && box.innerHTML.endsWith('MD[draft [[X]]]'), 'the box did not get the draft through the wiki engine: ' + JSON.stringify(box.innerHTML));
   check(bad, box.hidden === false, 'the box stayed hidden after Preview');
   w.app.previewEditor();
   check(bad, box.hidden === true, 'a second Preview click did not hide the box');

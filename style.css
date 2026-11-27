@@ -805,7 +805,25 @@ details.fold > *:not(summary):last-child { margin-bottom: 14px; }
    Chrome insets a sticky bottom by the scroller's padding-bottom, so --padb is added back */
 .editor-bar { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 6px 0; position: sticky; bottom: calc(0px - var(--padb, 0px)); z-index: 2; background: var(--bg); }
 .edit-msg { font-size: 13px; color: var(--muted); }
-.edit-preview { margin-top: 16px; padding: 6px 18px 18px; border: 1px solid var(--border-strong); border-radius: var(--radius); } /* the draft as the wiki engine will save it: article typography is global under #page, so only a frame is needed */
+.edit-preview {
+  position: fixed; /* modal over everything: covers the topbar, the draft floats where the page was */
+  inset: 8vh 5vw;
+  z-index: 35; /* above the topbar (20) and the search panel (30), below the save toast (40) */
+  overflow: auto;
+  padding: 6px 22px 26px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.edit-preview::before { /* backdrop, same idiom as body.nav-open::after; the click lands on the box itself, and the page's click handler closes the preview on it */
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.35);
+}
+.edit-preview-hint { margin: 6px 0 14px; font-size: 12px; color: var(--muted); }
 .edit-alert, .edit-conflicts { margin-bottom: 12px; padding: 12px 14px; font-size: 13px; border: 1px solid var(--warn); border-radius: var(--radius); }
 .edit-alert:empty, .edit-conflicts:empty { display: none; }
 .loading-note { color: var(--muted); font-size: 14px; }
