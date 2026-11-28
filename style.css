@@ -442,6 +442,8 @@ img { max-width: 100%; border-radius: 6px; }
 .tree .side-new { display: flex; gap: 4px; padding: 4px 0 2px; }
 .newbtn { background: none; border: 0; padding: 3px; border-radius: 5px; color: var(--muted); cursor: pointer; line-height: 0; }
 .newbtn:hover { background: var(--hover); color: var(--text); }
+.newbtn[data-del] { color: var(--danger); } /* trash is red like every other destructive control here */
+.newbtn[data-del]:hover { background: var(--danger-soft); color: var(--danger); }
 
 /* tag filter pills */
 .tags { margin-top: 24px; padding: 18px 6px 0; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; }
