@@ -114,8 +114,9 @@ hide the button: the wiki still reads the live folder, it just cannot be
 edited from this copy.
 
 Beside the page list, live mode shows two small **+** buttons — one above the
-tree and one on each folder: they create an empty page (name asked without
-`.md`, then the page opens) or a new folder. Names with `:` `/` `\` `*` `?`
+tree and one on each folder: they create an empty page or a new folder, each
+asked in a modal input for the name (the page's `.md` is added for you, and
+the new page opens once created). Names with `:` `/` `\` `*` `?`
 `"` `<` `>` `|`, a leading dot or a trailing dot are refused, as is any name
 already taken. Next to every page and folder there is a small trash button:
 it deletes that file, or the whole folder and everything inside it — after a

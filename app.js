@@ -112,7 +112,8 @@
         moveGo: 'Move', deleteGo: 'Delete',
         moveIntoSelf: 'A folder cannot be moved into itself.',
         couldNotMove: 'Could not move: ',
-        promptPageName: 'New page name (without .md):', promptFolderName: 'New folder name:',
+        promptPageName: 'New page name (without .md)', promptFolderName: 'New folder name',
+        createGo: 'Create',
         nameTaken: 'A file or folder with that name already exists.',
         nameBad: 'Invalid name: empty, hidden (leading dot), or containing / \\ : * ? " < > |.',
         couldNotCreate: 'Could not create: ', folderCreated: 'Folder created.',
@@ -157,7 +158,8 @@
         moveGo: 'Déplacer', deleteGo: 'Supprimer',
         moveIntoSelf: 'Un dossier ne peut pas être déplacé dans lui-même.',
         couldNotMove: 'Déplacement impossible : ',
-        promptPageName: 'Nom de la nouvelle page (sans .md) :', promptFolderName: 'Nom du nouveau dossier :',
+        promptPageName: 'Nom de la nouvelle page (sans .md)', promptFolderName: 'Nom du nouveau dossier',
+        createGo: 'Créer',
         nameTaken: 'Un fichier ou dossier porte déjà ce nom.',
         nameBad: 'Nom invalide : vide, caché (point au début), ou contenant / \\ : * ? " < > |.',
         couldNotCreate: 'Création impossible : ', folderCreated: 'Dossier créé.',
@@ -933,23 +935,35 @@
     clearTimeout(toastTimer); // long enough to read the full build reminder
     toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, 6000);
   }
-  function askConfirm(title, risks, okKey) { // modal, not window.confirm: risks are a list a one-line confirm can't hold. Resolves true only on the explicit yes; Esc and backdrop clicks cancel
+  function showModal(title, body, okKey, okMod, done) { // shared modal shell: done(true) only on the explicit ok action, false on Esc/backdrop/Cancel. Returns { el, accept }
+    const ov = document.createElement('div');
+    ov.className = 'modal-mask';
+    ov.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true"><h2>' + title + '</h2>' + body +
+      '<div class="modal-btns"><button class="btn" type="button" data-act="0">' + tr('cancel') + '</button><button class="btn ' + okMod + '" type="button" data-act="1">' + tr(okKey) + '</button></div></div>';
+    document.body.appendChild(ov);
+    let closed = false; // double Enter/click races must not resolve twice
+    const done2 = function (v) { if (closed) return; closed = true; document.removeEventListener('keydown', esc, true); ov.remove(); done(v); };
+    const esc = function (e) { if (e.key === 'Escape') { e.stopPropagation(); done2(false); } }; // capture: the modal eats Esc before the drawer handler sees it
+    document.addEventListener('keydown', esc, true);
+    ov.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-act]');
+      if (b) done2(b.getAttribute('data-act') === '1');
+      else if (e.target === ov) done2(false); // backdrop click cancels, same idiom as the editor preview modal
+    });
+    return { el: ov, accept: function () { done2(true); } };
+  }
+  function askConfirm(title, risks, okKey) { // modal, not window.confirm: risks are a list a one-line confirm can't hold
     return new Promise(function (resolve) {
-      const ov = document.createElement('div');
-      ov.className = 'modal-mask';
-      ov.innerHTML = '<div class="modal-card" role="alertdialog" aria-modal="true"><h2>' + title + '</h2><ul class="modal-risks">' +
-        risks.map(function (r) { return '<li>' + r + '</li>'; }).join('') +
-        '</ul><div class="modal-btns"><button class="btn" type="button" data-act="0">' + tr('cancel') + '</button><button class="btn btn--red" type="button" data-act="1">' + tr(okKey) + '</button></div></div>';
-      document.body.appendChild(ov);
-      const done = function (v) { document.removeEventListener('keydown', esc, true); ov.remove(); resolve(v); };
-      const esc = function (e) { if (e.key === 'Escape') { e.stopPropagation(); done(false); } }; // capture: the modal eats Esc before the drawer handler sees it
-      document.addEventListener('keydown', esc, true);
-      ov.addEventListener('click', function (e) {
-        const b = e.target.closest('[data-act]');
-        if (b) done(b.getAttribute('data-act') === '1');
-        else if (e.target === ov) done(false); // backdrop click cancels, same idiom as the editor preview modal
-      });
-      ov.querySelector('[data-act="1"]').focus();
+      const m = showModal(title, '<ul class="modal-risks">' + risks.map(function (r) { return '<li>' + r + '</li>'; }).join('') + '</ul>', okKey, 'btn--red', resolve);
+      m.el.querySelector('[data-act="1"]').focus();
+    });
+  }
+  function askName(title, okKey) { // the new page/folder name modal: Enter accepts, cancel paths resolve null
+    return new Promise(function (resolve) {
+      const m = showModal(title, '<input class="modal-input" type="text" spellcheck="false" aria-label="' + title + '">', okKey, 'btn--green', function (v) { resolve(v ? m.el.querySelector('.modal-input').value.trim() : null); });
+      const inp = m.el.querySelector('.modal-input');
+      inp.focus();
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') m.accept(); });
     });
   }
   // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview in its toolbar
@@ -1273,7 +1287,7 @@
         return;
       }
       const page = n.getAttribute('data-new') === 'page';
-      const name = ((window.prompt(page ? tr('promptPageName') : tr('promptFolderName'), '') || '') + '').trim();
+      const name = (await askName(tr(page ? 'promptPageName' : 'promptFolderName'), 'createGo')) || '';
       if (!name) return;
       const r = await createEntry(liveHandle, page, n.getAttribute('data-path') || '', name);
       if (r.error) { toast(r.error); return; }
