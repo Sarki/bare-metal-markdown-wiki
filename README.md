@@ -118,14 +118,17 @@ tree and one on each folder: they create an empty page (name asked without
 `.md`, then the page opens) or a new folder. Names with `:` `/` `\` `*` `?`
 `"` `<` `>` `|`, a leading dot or a trailing dot are refused, as is any name
 already taken. Next to every page and folder there is a small trash button:
-it deletes that file, or the whole folder and everything inside it, after a
-confirm dialog. Folders the scan finds — empty ones included — show in the
-tree even before they hold any page. Pages and folders are also draggable:
-drop one on a folder (or on the empty sidebar area for the top level) and a
-confirm dialog spells out the risk — relative links and image paths inside
-the moved pages are **not** rewritten and may break — before the files are
-moved on disk, a folder together with everything inside it. A folder can
-never be moved into itself, and a move never overwrites an existing name.
+it deletes that file, or the whole folder and everything inside it — after a
+confirm modal spells out exactly what is lost, since none of it can be
+undone. Folders the scan finds — empty ones included — show in the tree
+even before they hold any page. Pages and folders are also draggable: drop
+one on a folder (or on the empty sidebar area for the top level) and a
+confirm modal names the exact move and lists the risks — relative links and
+image paths inside the moved pages are **not** rewritten and may break;
+the move is copy-then-delete, so closing the tab mid-move of a big folder
+can leave it half-moved. Only the explicit Move button acts; Esc, backdrop
+clicks and Cancel all back out. A folder can never be moved into itself,
+and a move never overwrites an existing name.
 `editButton: false` hides all of this: no create, delete or drag.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):

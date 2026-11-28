@@ -101,12 +101,15 @@
         matchesNote: '%1 matches &mdash; showing the first %2. Edit <code>maxResults</code> in config.js to see more.',
         edit: 'Edit', newPage: 'New page', newFolder: 'New folder',
         delPage: 'Delete page', delFolder: 'Delete folder',
-        confirmDelPage: 'Delete the page %1? It cannot be undone.',
-        confirmDelFolder: 'Delete the folder %1 and everything inside it? It cannot be undone.',
         couldNotDelete: 'Could not delete: ',
+        delPageTitle: 'Delete the page &ldquo;%1&rdquo;?', delFolderTitle: 'Delete the folder &ldquo;%1&rdquo;?',
+        movePageTitle: 'Move the page &ldquo;%1&rdquo; into %2?', moveFolderTitle: 'Move the folder &ldquo;%1&rdquo; into %2?',
         moveRoot: 'the top level',
-        confirmMovePage: 'Move the page %1 into %2? Relative links and image paths inside the page are NOT rewritten, and may break.',
-        confirmMoveFolder: 'Move the folder %1 into %2, with every page and file inside it? Relative links that point out of the folder, or into it from other pages, are NOT rewritten, and may break.',
+        riskNoUndo: 'This cannot be undone.',
+        riskDelFolder: 'Every page and file inside the folder is deleted too.',
+        riskLinks: 'Relative links and image paths inside the moved pages are NOT rewritten and may break.',
+        riskTab: 'Do not close this tab until the sidebar updates: a big folder takes a moment to move, and closing mid-move can leave it half-moved.',
+        moveGo: 'Move', deleteGo: 'Delete',
         moveIntoSelf: 'A folder cannot be moved into itself.',
         couldNotMove: 'Could not move: ',
         promptPageName: 'New page name (without .md):', promptFolderName: 'New folder name:',
@@ -143,12 +146,15 @@
         matchesNote: '%1 r\u00e9sultats \u2014 voici les %2 premiers. Modifiez <code>maxResults</code> dans config.js pour en voir plus.',
         edit: 'Modifier', newPage: 'Nouvelle page', newFolder: 'Nouveau dossier',
         delPage: 'Supprimer la page', delFolder: 'Supprimer le dossier',
-        confirmDelPage: 'Supprimer la page %1 ? Cette action est irréversible.',
-        confirmDelFolder: 'Supprimer le dossier %1 et tout son contenu ? Cette action est irréversible.',
         couldNotDelete: 'Suppression impossible : ',
+        delPageTitle: 'Supprimer la page &laquo;&nbsp;%1&nbsp;&raquo;&nbsp;?', delFolderTitle: 'Supprimer le dossier &laquo;&nbsp;%1&nbsp;&raquo;&nbsp;?',
+        movePageTitle: 'Déplacer la page &laquo;&nbsp;%1&nbsp;&raquo; vers %2&nbsp;?', moveFolderTitle: 'Déplacer le dossier &laquo;&nbsp;%1&nbsp;&raquo; vers %2&nbsp;?',
         moveRoot: 'la racine',
-        confirmMovePage: 'Déplacer la page %1 dans %2 ? Les liens relatifs et les chemins d’images internes à la page ne seront PAS réécrits et risquent d’être cassés.',
-        confirmMoveFolder: 'Déplacer le dossier %1 dans %2, avec toutes ses pages et tous ses fichiers ? Les liens relatifs qui sortent du dossier, ou y entrent depuis d’autres pages, ne seront PAS réécrits et risquent d’être cassés.',
+        riskNoUndo: 'Cette action est irréversible.',
+        riskDelFolder: 'Toutes les pages et tous les fichiers du dossier seront supprimés aussi.',
+        riskLinks: 'Les liens relatifs et les chemins d’images à l’intérieur des pages déplacées ne seront PAS réécrits et risquent d’être cassés.',
+        riskTab: 'Ne fermez pas cet onglet tant que la barre latérale ne s’est pas rafraîchie : déplacer un gros dossier prend un instant, et fermer en cours de déplacement peut le laisser à moitié déplacé.',
+        moveGo: 'Déplacer', deleteGo: 'Supprimer',
         moveIntoSelf: 'Un dossier ne peut pas être déplacé dans lui-même.',
         couldNotMove: 'Déplacement impossible : ',
         promptPageName: 'Nom de la nouvelle page (sans .md) :', promptFolderName: 'Nom du nouveau dossier :',
@@ -927,6 +933,25 @@
     clearTimeout(toastTimer); // long enough to read the full build reminder
     toastTimer = setTimeout(function () { t.classList.remove('toast--on'); }, 6000);
   }
+  function askConfirm(title, risks, okKey) { // modal, not window.confirm: risks are a list a one-line confirm can't hold. Resolves true only on the explicit yes; Esc and backdrop clicks cancel
+    return new Promise(function (resolve) {
+      const ov = document.createElement('div');
+      ov.className = 'modal-mask';
+      ov.innerHTML = '<div class="modal-card" role="alertdialog" aria-modal="true"><h2>' + title + '</h2><ul class="modal-risks">' +
+        risks.map(function (r) { return '<li>' + r + '</li>'; }).join('') +
+        '</ul><div class="modal-btns"><button class="btn" type="button" data-act="0">' + tr('cancel') + '</button><button class="btn btn--red" type="button" data-act="1">' + tr(okKey) + '</button></div></div>';
+      document.body.appendChild(ov);
+      const done = function (v) { document.removeEventListener('keydown', esc, true); ov.remove(); resolve(v); };
+      const esc = function (e) { if (e.key === 'Escape') { e.stopPropagation(); done(false); } }; // capture: the modal eats Esc before the drawer handler sees it
+      document.addEventListener('keydown', esc, true);
+      ov.addEventListener('click', function (e) {
+        const b = e.target.closest('[data-act]');
+        if (b) done(b.getAttribute('data-act') === '1');
+        else if (e.target === ov) done(false); // backdrop click cancels, same idiom as the editor preview modal
+      });
+      ov.querySelector('[data-act="1"]').focus();
+    });
+  }
   // EasyMDE (CodeMirror 5 inside) replaces the textarea with a highlighted one; no preview in its toolbar
   // because its preview renders with marked, not our markdown-it — [[links]] and ::: boxes would look wrong
   // there; the editor bar's Preview button uses the real wiki engine instead (previewEditor).
@@ -1239,7 +1264,9 @@
       e.preventDefault(); // the folder-row buttons sit inside <summary>: the click must not toggle the folder open/closed
       if (d) {
         const page = d.getAttribute('data-del') === 'page', path = d.getAttribute('data-path') || '';
-        if (!window.confirm(tr(page ? 'confirmDelPage' : 'confirmDelFolder').replace('%1', path.split('/').pop()))) return;
+        const name = escapeHtml(path.split('/').pop()); // the modal title is HTML: escape before substituting %1
+        const risks = page ? [tr('riskNoUndo')] : [tr('riskNoUndo'), tr('riskDelFolder')];
+        if (!(await askConfirm(tr(page ? 'delPageTitle' : 'delFolderTitle').replace('%1', name), risks, 'deleteGo'))) return;
         const rd = await deleteEntry(liveHandle, page, path);
         if (rd.error) { toast(rd.error); return; }
         await refreshLive(); // the next scan no longer sees the entry: rows go, and a deleted page on screen reroutes to not-found
@@ -1279,8 +1306,8 @@
       const cut = ent.path.lastIndexOf('/');
       if (dest === (cut === -1 ? '' : ent.path.slice(0, cut))) return; // dropped where it already lives
       if (ent.kind === 'folder' && (dest === ent.path || dest.indexOf(ent.path + '/') === 0)) { toast(tr('moveIntoSelf')); return; }
-      const where = dest ? '"' + dest.split('/').pop() + '"' : tr('moveRoot');
-      if (!window.confirm(tr(ent.kind === 'page' ? 'confirmMovePage' : 'confirmMoveFolder').replace('%1', ent.path.split('/').pop()).replace('%2', where))) return;
+      const where = dest ? escapeHtml(dest.split('/').pop()) : tr('moveRoot'); // unquoted: the quote style that fits goes around %1 only, and 'the top level' reads better bare
+      if (!(await askConfirm(tr(ent.kind === 'page' ? 'movePageTitle' : 'moveFolderTitle').replace('%1', escapeHtml(ent.path.split('/').pop())).replace('%2', where), [tr('riskLinks'), tr('riskTab')], 'moveGo'))) return;
       const r = await moveEntry(liveHandle, ent.kind, ent.path, dest);
       if (r.error) { toast(r.error); return; }
       await refreshLive(); // the rescan puts the moved pages at their new slugs; a page on screen keeps showing
