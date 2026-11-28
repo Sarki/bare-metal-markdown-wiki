@@ -118,9 +118,12 @@ tree and one on each folder: they create an empty page or a new folder, each
 asked in a modal input for the name (the page's `.md` is added for you, and
 the new page opens once created). Names with `:` `/` `\` `*` `?`
 `"` `<` `>` `|`, a leading dot or a trailing dot are refused, as is any name
-already taken. Next to every page and folder there is a small trash button:
-it deletes that file, or the whole folder and everything inside it — after a
-confirm modal spells out exactly what is lost, since none of it can be
+already taken. Next to every page and folder sit a small pencil and a
+trash button: the pencil renames it in place — the old name is pre-filled
+and you confirm by Enter — and the trash deletes that file, or the whole
+folder and everything inside it. Both first show a modal spelling out what
+is at stake: renames and moves do **not** rewrite the wiki links and
+relative links that point at the renamed path, and nothing deleted can be
 undone. Folders the scan finds — empty ones included — show in the tree
 even before they hold any page. Pages and folders are also draggable: drop
 one on a folder (or on the empty sidebar area for the top level) and a

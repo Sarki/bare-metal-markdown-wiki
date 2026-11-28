@@ -100,6 +100,11 @@
         copyCode: 'Copy code snippet', noResults: '\u2014 no results \u2014',
         matchesNote: '%1 matches &mdash; showing the first %2. Edit <code>maxResults</code> in config.js to see more.',
         edit: 'Edit', newPage: 'New page', newFolder: 'New folder',
+        renamePage: 'Rename page', renameFolder: 'Rename folder',
+        renamePageTitle: 'New name for the page &ldquo;%1&rdquo; (without .md)', renameFolderTitle: 'New name for the folder &ldquo;%1&rdquo;',
+        renameGo: 'Rename',
+        riskRenamePage: 'Wiki links like [[%1]] and relative links pointing at this page are NOT rewritten and may break.',
+        riskRenameFolder: 'Relative links pointing into the folder are NOT rewritten and may break; the whole folder is moved file by file.',
         delPage: 'Delete page', delFolder: 'Delete folder',
         couldNotDelete: 'Could not delete: ',
         delPageTitle: 'Delete the page &ldquo;%1&rdquo;?', delFolderTitle: 'Delete the folder &ldquo;%1&rdquo;?',
@@ -146,6 +151,11 @@
         copyCode: 'Copier le code', noResults: '\u2014 aucun r\u00e9sultat \u2014',
         matchesNote: '%1 r\u00e9sultats \u2014 voici les %2 premiers. Modifiez <code>maxResults</code> dans config.js pour en voir plus.',
         edit: 'Modifier', newPage: 'Nouvelle page', newFolder: 'Nouveau dossier',
+        renamePage: 'Renommer la page', renameFolder: 'Renommer le dossier',
+        renamePageTitle: 'Nouveau nom pour la page &laquo;&nbsp;%1&nbsp;&raquo; (sans .md)', renameFolderTitle: 'Nouveau nom pour le dossier &laquo;&nbsp;%1&nbsp;&raquo;',
+        renameGo: 'Renommer',
+        riskRenamePage: 'Les liens de type [[%1]] et les liens relatifs qui pointent vers cette page ne seront PAS réécrits et risquent d’être cassés.',
+        riskRenameFolder: 'Les liens relatifs qui pointent vers le dossier ne seront PAS réécrits et risquent d’être cassés ; tout le dossier est déplacé fichier par fichier.',
         delPage: 'Supprimer la page', delFolder: 'Supprimer le dossier',
         couldNotDelete: 'Suppression impossible : ',
         delPageTitle: 'Supprimer la page &laquo;&nbsp;%1&nbsp;&raquo;&nbsp;?', delFolderTitle: 'Supprimer le dossier &laquo;&nbsp;%1&nbsp;&raquo;&nbsp;?',
@@ -540,9 +550,12 @@
     const delBtn = function (kind, p) { // trash can, same inline-SVG style as the + buttons
       return '<button class="newbtn" type="button" data-del="' + kind + '" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '" aria-label="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 4.5h9M6.5 3h3M4.5 4.5l.4 8.5h6.2l.4-8.5M6.7 6.5v4.5M9.3 6.5v4.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
     };
+    const renBtn = function (kind, p) { // pencil: rename in place, the same data-path plumbing as the trash
+      return '<button class="newbtn" type="button" data-ren="' + kind + '" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr(kind === 'page' ? 'renamePage' : 'renameFolder')) + '" aria-label="' + escapeHtml(tr(kind === 'page' ? 'renamePage' : 'renameFolder')) + '"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 12.5l.6-2.7 7.2-7.2 2.1 2.1-7.2 7.2zM10.2 3.2l2.1 2.1" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    };
     const linkHtml = function (s) {
       const a = '<a ' + (canCreate ? 'draggable="true" data-move="page" data-path="' + escapeHtml(s) + '" ' : '') + 'href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
-      return canCreate ? '<span class="trow">' + a + delBtn('page', s) + '</span>' : a;
+      return canCreate ? '<span class="trow">' + a + renBtn('page', s) + delBtn('page', s) + '</span>' : a;
     };
     const newBtns = function (p) { // inline SVG keeps the icon font out, like every other control; the words ride the title/aria-label
       const plus = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
@@ -561,7 +574,7 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary' + (canCreate ? ' draggable="true" data-move="folder" data-path="' + escapeHtml(p) + '"' : '') + '>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + delBtn('folder', p) + '</span>' : '') + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary' + (canCreate ? ' draggable="true" data-move="folder" data-path="' + escapeHtml(p) + '"' : '') + '>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + renBtn('folder', p) + delBtn('folder', p) + '</span>' : '') + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
@@ -753,8 +766,8 @@
       }
     }
   }
-  async function moveEntry(root, kind, path, dest) { // drag-n-drop rearranging: copy at the destination then delete the original — the File System Access API has no move
-    const name = path.split('/').pop();
+  async function moveEntry(root, kind, path, dest, newName) { // drag-n-drop rearranging: copy at the destination then delete the original — the File System Access API has no move. A rename is the same move into the same folder under a new name
+    const old = path.split('/').pop(), name = newName || old; // the source keeps its old name; the copy at the destination gets the new one
     if (!validName(name)) return { error: tr('nameBad') };
     if (kind === 'folder' && (dest === path || dest.indexOf(path + '/') === 0)) return { error: tr('moveIntoSelf') }; // a folder moving into its own subtree would copy itself forever
     try {
@@ -763,16 +776,16 @@
       for (const part of src.slice(0, -1)) srcDir = await srcDir.getDirectoryHandle(part);
       for (const part of (dest ? dest.split('/') : [])) dstDir = await dstDir.getDirectoryHandle(part);
       if (kind === 'page') {
-        const fh = await srcDir.getFileHandle(name + '.md');
+        const fh = await srcDir.getFileHandle(old + '.md');
         try { await dstDir.getFileHandle(name + '.md'); return { error: tr('nameTaken') }; } catch (e) { if (!isNotFoundErr(e)) throw e; } // never overwrite, same rule as create
         const w = await (await dstDir.getFileHandle(name + '.md', { create: true })).createWritable();
         await w.write(await fh.getFile()); await w.close();
-        await srcDir.removeEntry(name + '.md');
+        await srcDir.removeEntry(old + '.md');
       } else {
         try { await dstDir.getDirectoryHandle(name); return { error: tr('nameTaken') }; } catch (e) { if (!isNotFoundErr(e)) throw e; }
-        const sd = await srcDir.getDirectoryHandle(name);
+        const sd = await srcDir.getDirectoryHandle(old);
         await moveContents(sd, await dstDir.getDirectoryHandle(name, { create: true }));
-        await srcDir.removeEntry(name); // empty by now: without recursive a leftover would throw instead of vanishing silently
+        await srcDir.removeEntry(old); // empty by now: without recursive a leftover would throw instead of vanishing silently
       }
     } catch (e) { return { error: tr('couldNotMove') + e.message }; }
     return { ok: true };
@@ -958,11 +971,14 @@
       m.el.querySelector('[data-act="1"]').focus();
     });
   }
-  function askName(title, okKey) { // the new page/folder name modal: Enter accepts, cancel paths resolve null
+  function askName(title, okKey, prefill, risks) { // the name modal: Enter accepts, cancel paths resolve null; rename pre-fills the old name and lists its risks
     return new Promise(function (resolve) {
-      const m = showModal(title, '<input class="modal-input" type="text" spellcheck="false" aria-label="' + title + '">', okKey, 'btn--green', function (v) { resolve(v ? m.el.querySelector('.modal-input').value.trim() : null); });
+      const body = '<input class="modal-input" type="text" spellcheck="false" aria-label="' + title + '">' + (risks ? '<ul class="modal-risks">' + risks.map(function (r) { return '<li>' + r + '</li>'; }).join('') + '</ul>' : '');
+      const m = showModal(title, body, okKey, 'btn--green', function (v) { resolve(v ? m.el.querySelector('.modal-input').value.trim() : null); });
       const inp = m.el.querySelector('.modal-input');
+      inp.value = prefill || '';
       inp.focus();
+      if (prefill) inp.select(); // so typing replaces the old name outright
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') m.accept(); });
     });
   }
@@ -1272,10 +1288,23 @@
       const a = e.target.closest('a[data-slug]');
       if (a && a.dataset.slug === shownPage) { e.preventDefault(); closeNav(); el('content').scrollTo({ top: 0, behavior: 'smooth' }); }
     });
-    el('tree').addEventListener('click', async function (e) { // live-mode sidebar buttons: + creates an empty page (then opens it) or a folder under the button's data-path, the trash removes one
-      const n = e.target.closest('[data-new]'), d = e.target.closest('[data-del]');
-      if (!n && !d) return;
+    el('tree').addEventListener('click', async function (e) { // live-mode sidebar buttons: + creates an empty page (then opens it) or a folder under the button's data-path, the pencil renames one in place, the trash removes one
+      const n = e.target.closest('[data-new]'), d = e.target.closest('[data-del]'), m = e.target.closest('[data-ren]');
+      if (!n && !d && !m) return;
       e.preventDefault(); // the folder-row buttons sit inside <summary>: the click must not toggle the folder open/closed
+      if (m) {
+        const page = m.getAttribute('data-ren') === 'page', path = m.getAttribute('data-path') || '';
+        const cur = path.split('/').pop();
+        const risks = page ? [tr('riskRenamePage').replace('%1', cur)] : [tr('riskRenameFolder'), tr('riskTab')];
+        const nn = await askName(tr(page ? 'renamePageTitle' : 'renameFolderTitle').replace('%1', escapeHtml(cur)), 'renameGo', cur, risks);
+        if (!nn || nn === cur) return; // nothing asked for
+        const parent = path.lastIndexOf('/') === -1 ? '' : path.slice(0, path.lastIndexOf('/'));
+        const rr = await moveEntry(liveHandle, page ? 'page' : 'folder', path, parent, nn);
+        if (rr.error) { toast(rr.error); return; }
+        await refreshLive();
+        if (page && shownPage === path) location.hash = '#' + encodeURIComponent((parent ? parent + '/' : '') + nn); // the page on screen follows its new name
+        return;
+      }
       if (d) {
         const page = d.getAttribute('data-del') === 'page', path = d.getAttribute('data-path') || '';
         const name = escapeHtml(path.split('/').pop()); // the modal title is HTML: escape before substituting %1

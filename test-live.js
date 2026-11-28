@@ -1170,7 +1170,7 @@ t('folders opened or closed by hand survive every sidebar redraw', async functio
 
 t('bundled mode has no create buttons; live mode has them at the root and on every folder', async function () {
   const bad = [];
-  check(bad, !/data-new|data-del|data-move/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
+  check(bad, !/data-new|data-del|data-ren|data-move/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
   const live = sidebarHtml('Home', '#Home', null, true);
   check(bad, (live.match(/data-new="page"/g) || []).length === 2 && (live.match(/data-new="folder"/g) || []).length === 2, 'create buttons at root + on the folder: ' + live);
   check(bad, /data-new="page" data-path="guides"/.test(live), 'no folder-scoped page button: ' + live);
@@ -1178,6 +1178,7 @@ t('bundled mode has no create buttons; live mode has them at the root and on eve
   check(bad, /data-path="guides\/sub"/.test(seeded), 'the empty new folder is missing from the tree: ' + seeded);
   check(bad, /data-new="page" data-path="guides\/sub"/.test(seeded), 'the empty new folder has no buttons of its own: ' + seeded);
   check(bad, (live.match(/data-del="page"/g) || []).length === 2 && (live.match(/data-del="folder"/g) || []).length === 1, 'trash buttons on every page and folder: ' + live);
+  check(bad, (live.match(/data-ren="page"/g) || []).length === 2 && (live.match(/data-ren="folder"/g) || []).length === 1, 'rename buttons on every page and folder: ' + live);
   check(bad, /draggable="true" data-move="page" data-path="guides\/setup"/.test(live) && /draggable="true" data-move="folder" data-path="guides"/.test(live), 'live rows carry the drag handles: ' + live);
   return bad;
 });
@@ -1276,6 +1277,24 @@ t('live mode moves pages and whole folders between folders: copy then delete, no
   await w.app.forceRefresh();
   check(bad, w.app.pages['Other/Guides/Basics'] && w.app.pages['Other/Keep'] && w.app.pages.Home && !w.app.pages['Guides/Basics'] &&
     w.app.dirs.indexOf('Guides') === -1 && w.app.dirs.indexOf('Other/Guides') !== -1, 'index or scan never caught the move: ' + Object.keys(w.app.pages).join(',') + ' | ' + w.app.dirs.join(','));
+  return bad;
+});
+
+t('renames ride the same move: new name in place, contents intact, clashes and bad names refused', async function () {
+  const tree = { 'Home.md': page('v1'), 'Other.md': page('o'), 'Guides': { 'Basics.md': page('b1'), 'img.png': page('idata') } };
+  const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  let r = await w.app.moveEntry(f.root, 'page', 'Home', '', 'Renamed');
+  check(bad, r.ok === true && !tree['Home.md'] && textOf(tree['Renamed.md']) === 'v1', 'page rename: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'folder', 'Guides', '', 'Docs');
+  check(bad, r.ok === true && !tree.Guides && textOf(tree.Docs['Basics.md']) === 'b1' && textOf(tree.Docs['img.png']) === 'idata', 'folder rename keeps every file: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'page', 'Renamed', '', 'Other');
+  check(bad, /already exists/.test(r.error || '') && tree['Renamed.md'], 'rename onto a taken name: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'page', 'Renamed', '', 'a/b');
+  check(bad, /Invalid name/.test(r.error || ''), 'rename name with a slash accepted: ' + JSON.stringify(r));
+  await w.app.forceRefresh();
+  check(bad, w.app.pages.Renamed && w.app.pages['Docs/Basics'] && !w.app.pages.Home && !w.app.pages['Guides/Basics'], 'index after renames: ' + Object.keys(w.app.pages).join(','));
   return bad;
 });
 
