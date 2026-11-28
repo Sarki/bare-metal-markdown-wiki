@@ -4,7 +4,7 @@
 const grab = require('./test-grab.js');
 const GRABBED = ['titleOf', 'parseFrontmatter', 'buildIndex', 'renderLanding', 'route', 'loadLive', 'folderStamp', 'fileAt', 'versionOf', 'readForEdit', 'saveFile',
   'applyLive', 'showPage', 'walkDir', 'showFolder', 'chooseFolder', 'refreshLive', 'pollLive', 'editMsg', 'toast', 'loadingNote', 'draftReadOnly', 'lockEditor', 'makeEditor', 'wikiSnippets', 'insertSnip', 'wikiButtons', 'draftText', 'openEditor', 'saveEditor', 'cancelEditor', 'leaveLive',
-  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar', 'validName', 'createEntry', 'deleteEntry'].map(grab).join('\n');
+  'splitLines', 'matchLines', 'merge3', 'changedLines', 'checkEditedPage', 'mergeIncoming', 'showChanges', 'reconcile', 'putMerged', 'showConflicts', 'pickConflict', 'previewEditor', 'uiDict', 'tr', 'translateToolbar', 'validName', 'isNotFoundErr', 'createEntry', 'deleteEntry', 'moveContents', 'moveEntry'].map(grab).join('\n');
 
 const factory = (0, eval)(`(function (env) {
   const el = env.el, location = env.location, document = env.document, window = env.window || {};
@@ -32,7 +32,7 @@ const factory = (0, eval)(`(function (env) {
   ${GRABBED}
   return {
     route: route, refreshLive: refreshLive, pollLive: pollLive, openEditor: openEditor, saveEditor: saveEditor, cancelEditor: cancelEditor, chooseFolder: chooseFolder, leaveLive: leaveLive,
-    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor, createEntry: createEntry, deleteEntry: deleteEntry, folderStamp: folderStamp,
+    mergeIncoming: mergeIncoming, showChanges: showChanges, pickConflict: pickConflict, previewEditor: previewEditor, createEntry: createEntry, deleteEntry: deleteEntry, folderStamp: folderStamp, moveEntry: moveEntry,
     async start(h) { applyLive(await loadLive(h)); liveHandle = h; mode = 'live'; buildIndex(); setMode('live'); route(); },
     forceRefresh() { lastRefresh = 0; return refreshLive(); },
     get editing() { return editing; }, get pages() { return PAGES; }, get handle() { return liveHandle && liveHandle.name; }, get dirs() { return liveDirs; }
@@ -55,7 +55,7 @@ function fakeFolder(name, tree) {
         if (!node[n]) { if (!opts || !opts.create) throw new Error('NotFoundError'); node[n] = page(''); }
         return file(node[n], n, prefix + n);
       },
-      async removeEntry(n, opts) { if (!node[n]) throw new Error('NotFoundError'); if (!isFile(node[n]) && !(opts && opts.recursive)) throw new Error('InvalidStateError'); delete node[n]; }, // like the real API: a non-empty folder needs { recursive: true }
+      async removeEntry(n, opts) { if (!node[n]) throw new Error('NotFoundError'); if (!isFile(node[n]) && Object.keys(node[n]).length && !(opts && opts.recursive)) throw new Error('InvalidStateError'); delete node[n]; }, // like the real API: a NON-EMPTY folder needs { recursive: true }; an empty one deletes fine
       async *values() { for (const k of Object.keys(node)) { if (!node[k]) continue; yield isFile(node[k]) ? file(node[k], k, prefix + k) : Object.assign(dir(node[k], prefix + k + '/'), { name: k }); } }
     };
   }
@@ -66,6 +66,7 @@ function fakeFolder(name, tree) {
         const snap = f.bytes;
         return {
           lastModified: f.modified,
+          bytes: snap, // so a stub File handed to another stub's write() keeps its exact bytes, like a real Blob
           async text() {
             if (ctl.failAlways.has(p) || ctl.failOnce.delete(p)) throw new Error('NotReadableError');
             if (ctl.hold.has(p)) await new Promise(function (res) { ctl.pending.push({ path: p, res: res }); });
@@ -76,7 +77,7 @@ function fakeFolder(name, tree) {
       async createWritable() {
         let buf = '';
         return {
-          async write(s) { buf += s; },
+          async write(s) { if (s && s.bytes) buf = s.bytes.toString('utf8'); else buf += s; }, // write(file) is the copy path: real File is a Blob, the stub carries .bytes
           async close() {
             if (ctl.holdWrite.has(p)) await new Promise(function (res) { ctl.pendingWrites.push(res); });
             f.bytes = Buffer.from(buf, 'utf8'); f.modified = ++clock;
@@ -1169,7 +1170,7 @@ t('folders opened or closed by hand survive every sidebar redraw', async functio
 
 t('bundled mode has no create buttons; live mode has them at the root and on every folder', async function () {
   const bad = [];
-  check(bad, !/data-new|data-del/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
+  check(bad, !/data-new|data-del|data-move/.test(sidebarHtml('Home', '#Home')), 'bundled sidebar: ' + sidebarHtml('Home', '#Home'));
   const live = sidebarHtml('Home', '#Home', null, true);
   check(bad, (live.match(/data-new="page"/g) || []).length === 2 && (live.match(/data-new="folder"/g) || []).length === 2, 'create buttons at root + on the folder: ' + live);
   check(bad, /data-new="page" data-path="guides"/.test(live), 'no folder-scoped page button: ' + live);
@@ -1177,6 +1178,7 @@ t('bundled mode has no create buttons; live mode has them at the root and on eve
   check(bad, /data-path="guides\/sub"/.test(seeded), 'the empty new folder is missing from the tree: ' + seeded);
   check(bad, /data-new="page" data-path="guides\/sub"/.test(seeded), 'the empty new folder has no buttons of its own: ' + seeded);
   check(bad, (live.match(/data-del="page"/g) || []).length === 2 && (live.match(/data-del="folder"/g) || []).length === 1, 'trash buttons on every page and folder: ' + live);
+  check(bad, /draggable="true" data-move="page" data-path="guides\/setup"/.test(live) && /draggable="true" data-move="folder" data-path="guides"/.test(live), 'live rows carry the drag handles: ' + live);
   return bad;
 });
 
@@ -1249,6 +1251,31 @@ t('live mode deletes pages and whole folders: gone from disk, index and scan', a
   check(bad, r.ok === true && !tree.Empty, 'empty folder: ' + JSON.stringify(r));
   await w.app.forceRefresh();
   check(bad, Object.keys(w.app.pages).length === 0 && w.app.dirs.length === 0, 'deleted entries still around: pages=' + Object.keys(w.app.pages).join(',') + ' dirs=' + w.app.dirs.join(','));
+  return bad;
+});
+
+t('live mode moves pages and whole folders between folders: copy then delete, nothing lost', async function () {
+  const tree = { 'Home.md': page('v1'), 'Guides': { 'Basics.md': page('b1'), 'notes.txt': page('raw'), 'Deep': {} }, 'Other': { 'Keep.md': page('k') } };
+  const f = fakeFolder('A', tree);
+  const w = makeApp({ hash: '#Home' }); await w.app.start(f.root);
+  const bad = [];
+  let r = await w.app.moveEntry(f.root, 'page', 'Home', 'Other');
+  check(bad, r.ok === true && !tree['Home.md'] && textOf(tree.Other['Home.md']) === 'v1', 'page into a folder: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'page', 'Other/Home', '');
+  check(bad, r.ok === true && !tree.Other['Home.md'] && textOf(tree['Home.md']) === 'v1', 'page back to the top level: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'page', 'Guides/Basics', 'Guides');
+  check(bad, /already exists/.test(r.error || ''), 'name clash at the destination was accepted: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'folder', 'Guides', 'Guides/Deep');
+  check(bad, /itself/.test(r.error || '') && tree.Guides, 'folder into its own subtree: ' + JSON.stringify(r));
+  r = await w.app.moveEntry(f.root, 'page', 'Nope', '');
+  check(bad, /Could not move/.test(r.error || ''), 'moving a missing page was reported as success');
+  r = await w.app.moveEntry(f.root, 'folder', 'Guides', 'Other'); // Basics.md + notes.txt + empty Deep inside
+  check(bad, r.ok === true && !tree.Guides &&
+    textOf(tree.Other.Guides['Basics.md']) === 'b1' && textOf(tree.Other.Guides['notes.txt']) === 'raw' &&
+    Object.keys(tree.Other.Guides.Deep).length === 0, 'folder with contents: ' + JSON.stringify(r));
+  await w.app.forceRefresh();
+  check(bad, w.app.pages['Other/Guides/Basics'] && w.app.pages['Other/Keep'] && w.app.pages.Home && !w.app.pages['Guides/Basics'] &&
+    w.app.dirs.indexOf('Guides') === -1 && w.app.dirs.indexOf('Other/Guides') !== -1, 'index or scan never caught the move: ' + Object.keys(w.app.pages).join(',') + ' | ' + w.app.dirs.join(','));
   return bad;
 });
 

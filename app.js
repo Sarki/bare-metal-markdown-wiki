@@ -104,6 +104,11 @@
         confirmDelPage: 'Delete the page %1? It cannot be undone.',
         confirmDelFolder: 'Delete the folder %1 and everything inside it? It cannot be undone.',
         couldNotDelete: 'Could not delete: ',
+        moveRoot: 'the top level',
+        confirmMovePage: 'Move the page %1 into %2? Relative links and image paths inside the page are NOT rewritten, and may break.',
+        confirmMoveFolder: 'Move the folder %1 into %2, with every page and file inside it? Relative links that point out of the folder, or into it from other pages, are NOT rewritten, and may break.',
+        moveIntoSelf: 'A folder cannot be moved into itself.',
+        couldNotMove: 'Could not move: ',
         promptPageName: 'New page name (without .md):', promptFolderName: 'New folder name:',
         nameTaken: 'A file or folder with that name already exists.',
         nameBad: 'Invalid name: empty, hidden (leading dot), or containing / \\ : * ? " < > |.',
@@ -141,6 +146,11 @@
         confirmDelPage: 'Supprimer la page %1 ? Cette action est irréversible.',
         confirmDelFolder: 'Supprimer le dossier %1 et tout son contenu ? Cette action est irréversible.',
         couldNotDelete: 'Suppression impossible : ',
+        moveRoot: 'la racine',
+        confirmMovePage: 'Déplacer la page %1 dans %2 ? Les liens relatifs et les chemins d’images internes à la page ne seront PAS réécrits et risquent d’être cassés.',
+        confirmMoveFolder: 'Déplacer le dossier %1 dans %2, avec toutes ses pages et tous ses fichiers ? Les liens relatifs qui sortent du dossier, ou y entrent depuis d’autres pages, ne seront PAS réécrits et risquent d’être cassés.',
+        moveIntoSelf: 'Un dossier ne peut pas être déplacé dans lui-même.',
+        couldNotMove: 'Déplacement impossible : ',
         promptPageName: 'Nom de la nouvelle page (sans .md) :', promptFolderName: 'Nom du nouveau dossier :',
         nameTaken: 'Un fichier ou dossier porte déjà ce nom.',
         nameBad: 'Nom invalide : vide, caché (point au début), ou contenant / \\ : * ? " < > |.',
@@ -523,7 +533,7 @@
       return '<button class="newbtn" type="button" data-del="' + kind + '" data-path="' + escapeHtml(p) + '" title="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '" aria-label="' + escapeHtml(tr(kind === 'page' ? 'delPage' : 'delFolder')) + '"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 4.5h9M6.5 3h3M4.5 4.5l.4 8.5h6.2l.4-8.5M6.7 6.5v4.5M9.3 6.5v4.5" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
     };
     const linkHtml = function (s) {
-      const a = '<a href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
+      const a = '<a ' + (canCreate ? 'draggable="true" data-move="page" data-path="' + escapeHtml(s) + '" ' : '') + 'href="#' + encodeURIComponent(s) + '" data-slug="' + escapeHtml(s) + '">' + escapeHtml(titleOf(s)) + '</a>';
       return canCreate ? '<span class="trow">' + a + delBtn('page', s) + '</span>' : a;
     };
     const newBtns = function (p) { // inline SVG keeps the icon font out, like every other control; the words ride the title/aria-label
@@ -543,7 +553,7 @@
     };
     const renderNode = function (name, node, path) { // one <details> per folder, nested for subfolders
       const p = path ? path + '/' + name : name;
-      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + delBtn('folder', p) + '</span>' : '') + '</summary><div class="grp-body">';
+      let h = '<details class="grp" data-path="' + escapeHtml(p) + '"' + (isOpen(p) ? ' open' : '') + '><summary' + (canCreate ? ' draggable="true" data-move="folder" data-path="' + escapeHtml(p) + '"' : '') + '>' + escapeHtml(name) + (canCreate ? '<span class="grp-new">' + newBtns(p) + delBtn('folder', p) + '</span>' : '') + '</summary><div class="grp-body">';
       h += orderedItems(node, p).map(function (i) { return i[1]; }).join('');
       return h + '</div></details>';
     };
@@ -698,18 +708,18 @@
   function validName(n) { // one path segment, no filesystem-reserved characters, not hidden and not ending in a dot
     return /^[^\/\\:*?"<>|.][^\/\\:*?"<>|]*$/.test(n) && !n.endsWith('.');
   }
+  function isNotFoundErr(e) { return ((e && e.name) + ' ' + (e && e.message)).indexOf('NotFound') !== -1; } // real API throws DOMException NotFoundError; the test stubs a plain Error
   async function createEntry(root, page, folder, name) { // empty Name.md or a folder under folder; { error } for a bad or taken name
     if (!validName(name)) return { error: tr('nameBad') };
     let dir = root;
     for (const part of folder ? folder.split('/') : []) dir = await dir.getDirectoryHandle(part);
-    const nf = function (e) { return ((e && e.name) + ' ' + (e && e.message)).indexOf('NotFound') !== -1; }; // real API throws DOMException NotFoundError; the test stubs a plain Error
     try {
       if (page) {
         try { await dir.getFileHandle(name + '.md'); return { error: tr('nameTaken') }; }
-        catch (e) { if (!nf(e)) throw e; await dir.getFileHandle(name + '.md', { create: true }); }
+        catch (e) { if (!isNotFoundErr(e)) throw e; await dir.getFileHandle(name + '.md', { create: true }); }
       } else {
         try { await dir.getDirectoryHandle(name); return { error: tr('nameTaken') }; }
-        catch (e) { if (!nf(e)) throw e; await dir.getDirectoryHandle(name, { create: true }); }
+        catch (e) { if (!isNotFoundErr(e)) throw e; await dir.getDirectoryHandle(name, { create: true }); }
       }
     } catch (e) { return { error: tr('couldNotCreate') + e.message }; }
     return { ok: true, slug: (folder ? folder + '/' : '') + name }; // slug form, no .md — that's what routes and PAGES use; the next scan picks the entry up, empty folder included
@@ -722,6 +732,41 @@
       for (const part of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(part);
       await dir.removeEntry(parts[parts.length - 1], page ? undefined : { recursive: true });
     } catch (e) { return { error: tr('couldNotDelete') + e.message }; }
+    return { ok: true };
+  }
+  async function moveContents(from, to) { // every entry, unscanned files included: leaving one behind for the folder delete would destroy it
+    const entries = []; for await (const e of from.values()) entries.push(e); // snapshot first: deleting while its own directory iterator walks is undefined territory
+    for (const e of entries) {
+      if (e.kind === 'directory') { await moveContents(e, await to.getDirectoryHandle(e.name, { create: true })); await from.removeEntry(e.name); } // empty by now, so the delete needs no recursive flag — a leftover would throw
+      else {
+        const w = await (await to.getFileHandle(e.name, { create: true })).createWritable();
+        await w.write(await e.getFile()); await w.close(); // handed the File itself: the browser copies the bytes, whatever the encoding
+        await from.removeEntry(e.name);
+      }
+    }
+  }
+  async function moveEntry(root, kind, path, dest) { // drag-n-drop rearranging: copy at the destination then delete the original — the File System Access API has no move
+    const name = path.split('/').pop();
+    if (!validName(name)) return { error: tr('nameBad') };
+    if (kind === 'folder' && (dest === path || dest.indexOf(path + '/') === 0)) return { error: tr('moveIntoSelf') }; // a folder moving into its own subtree would copy itself forever
+    try {
+      const src = path.split('/');
+      let srcDir = root, dstDir = root;
+      for (const part of src.slice(0, -1)) srcDir = await srcDir.getDirectoryHandle(part);
+      for (const part of (dest ? dest.split('/') : [])) dstDir = await dstDir.getDirectoryHandle(part);
+      if (kind === 'page') {
+        const fh = await srcDir.getFileHandle(name + '.md');
+        try { await dstDir.getFileHandle(name + '.md'); return { error: tr('nameTaken') }; } catch (e) { if (!isNotFoundErr(e)) throw e; } // never overwrite, same rule as create
+        const w = await (await dstDir.getFileHandle(name + '.md', { create: true })).createWritable();
+        await w.write(await fh.getFile()); await w.close();
+        await srcDir.removeEntry(name + '.md');
+      } else {
+        try { await dstDir.getDirectoryHandle(name); return { error: tr('nameTaken') }; } catch (e) { if (!isNotFoundErr(e)) throw e; }
+        const sd = await srcDir.getDirectoryHandle(name);
+        await moveContents(sd, await dstDir.getDirectoryHandle(name, { create: true }));
+        await srcDir.removeEntry(name); // empty by now: without recursive a leftover would throw instead of vanishing silently
+      }
+    } catch (e) { return { error: tr('couldNotMove') + e.message }; }
     return { ok: true };
   }
   function splitLines(text) { return text.match(/[^\n]*\n|[^\n]+$/g) || []; }
@@ -1209,6 +1254,38 @@
       if (page) location.hash = '#' + encodeURIComponent(r.slug);
       else toast(tr('folderCreated'));
     });
+    let dragEntry = null, dropEl = null; // dataTransfer.getData only works inside the drop event itself, so the dragged row rides here; dropEl is the folder currently highlighted
+    el('tree').addEventListener('dragstart', function (e) {
+      const m = e.target.closest('[data-move]');
+      if (!m) { e.preventDefault(); return; } // only live-mode rows carry data-move at all: nothing else is draggable
+      dragEntry = { kind: m.getAttribute('data-move'), path: m.getAttribute('data-path') || '' };
+      e.dataTransfer.setData('text/plain', dragEntry.path); // for the drag image and other apps; the move itself reads dragEntry
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el('tree').addEventListener('dragover', function (e) {
+      if (!dragEntry) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      const t = e.target.closest('details.grp') || this; // a folder row, or anywhere else in the tree: the top level
+      if (t !== dropEl) { if (dropEl) dropEl.classList.remove('dropping'); dropEl = t; t.classList.add('dropping'); }
+    });
+    el('tree').addEventListener('dragleave', function (e) { if (dropEl && !this.contains(e.relatedTarget)) { dropEl.classList.remove('dropping'); dropEl = null; } });
+    el('tree').addEventListener('drop', async function (e) {
+      if (!dragEntry) return;
+      e.preventDefault();
+      if (dropEl) { dropEl.classList.remove('dropping'); dropEl = null; }
+      const ent = dragEntry; dragEntry = null;
+      const g = e.target.closest('details.grp');
+      const dest = g ? g.getAttribute('data-path') || '' : '';
+      const cut = ent.path.lastIndexOf('/');
+      if (dest === (cut === -1 ? '' : ent.path.slice(0, cut))) return; // dropped where it already lives
+      if (ent.kind === 'folder' && (dest === ent.path || dest.indexOf(ent.path + '/') === 0)) { toast(tr('moveIntoSelf')); return; }
+      const where = dest ? '"' + dest.split('/').pop() + '"' : tr('moveRoot');
+      if (!window.confirm(tr(ent.kind === 'page' ? 'confirmMovePage' : 'confirmMoveFolder').replace('%1', ent.path.split('/').pop()).replace('%2', where))) return;
+      const r = await moveEntry(liveHandle, ent.kind, ent.path, dest);
+      if (r.error) { toast(r.error); return; }
+      await refreshLive(); // the rescan puts the moved pages at their new slugs; a page on screen keeps showing
+    });
+    el('tree').addEventListener('dragend', function () { if (dropEl) { dropEl.classList.remove('dropping'); dropEl = null; } dragEntry = null; });
     el('tocRail').addEventListener('click', tocScroll);
     // narrow screens: the hamburger opens the sidebar as an overlay drawer
     el('menuBtn').addEventListener('click', function () {

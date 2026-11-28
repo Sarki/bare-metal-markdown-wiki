@@ -120,8 +120,13 @@ tree and one on each folder: they create an empty page (name asked without
 already taken. Next to every page and folder there is a small trash button:
 it deletes that file, or the whole folder and everything inside it, after a
 confirm dialog. Folders the scan finds — empty ones included — show in the
-tree even before they hold any page. `editButton: false` hides all of this:
-no create or delete buttons either.
+tree even before they hold any page. Pages and folders are also draggable:
+drop one on a folder (or on the empty sidebar area for the top level) and a
+confirm dialog spells out the risk — relative links and image paths inside
+the moved pages are **not** rewritten and may break — before the files are
+moved on disk, a folder together with everything inside it. A folder can
+never be moved into itself, and a move never overwrites an existing name.
+`editButton: false` hides all of this: no create, delete or drag.
 
 That box is a real Markdown editor (vendored EasyMDE, CodeMirror 5 inside):
 headings, emphasis, lists, links and `[[wiki links]]` are coloured as you type,
